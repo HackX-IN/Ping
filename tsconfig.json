@@ -1,6 +1,20 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
-  }
+    "strict": true,
+    "noImplicitAny": true, 
+    "strictNullChecks": true, 
+    "noUnusedLocals": true, 
+    "noUnusedParameters": true, 
+    "strictPropertyInitialization": true, 
+    "jsx": "react-native", 
+    "esModuleInterop": true, 
+    "allowSyntheticDefaultImports": true, 
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+, "src/settings/Navigation.jsx"  
+, "src/Screens/tabs/ProfileScreen.jsx", "src/Screens/tabs/HomeScreen.jsx", "src/Screens/tabs/Allscreen.jsx", "src/Screens/tabs/CameraScreen.jsx", "src/Screens/tabs/CallScreen.jsx", "src/Screens/tabs/ChatScreen.jsx", "src/Screens/Onboarding/Onboarding.jsx", "src/Screens/Auth/Register.jsx", "src/Screens/Auth/Login.jsx"  ],
+  "exclude": ["node_modules"] 
 }
