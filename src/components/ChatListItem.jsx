@@ -10,8 +10,10 @@ import { useNavigation } from "@react-navigation/core";
 
 const ChatListItem = ({ item, index }) => {
   const navigation = useNavigation();
+  console.log(item);
   return (
     <TouchableOpacity
+      key={item.id}
       onPress={() => navigation.navigate("Chat", { receiverData: item })}
     >
       <View className="flex-row justify-between items-center p-3 mb-2  ">
@@ -29,7 +31,7 @@ const ChatListItem = ({ item, index }) => {
               resizeMode: "cover",
             }}
           />
-          <View
+          {/* <View
             style={{
               width: sizes.xtrasmall,
               height: sizes.xtrasmall,
@@ -39,7 +41,7 @@ const ChatListItem = ({ item, index }) => {
               bottom: 0,
               left: widthPercentageToDP(9),
             }}
-          />
+          /> */}
           <View className="flex-col  items-start flex justify-start ">
             <Text className="text-white text-sm font-medium"> {item.name}</Text>
             <Text
@@ -50,7 +52,7 @@ const ChatListItem = ({ item, index }) => {
                 ? "Image"
                 : item.msgType === "audio"
                 ? "audio"
-                : item.lstMsg}
+                : item.lastMsg}
             </Text>
           </View>
         </View>

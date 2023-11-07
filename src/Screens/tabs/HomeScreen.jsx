@@ -51,9 +51,9 @@ const HomeScreen = () => {
             paddingHorizontal: heightPercentageToDP(0.5),
           }}
           data={chatList}
-          keyExtractor={(item) => item.title}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item, index }) => (
-            <ChatListItem key={item.id} item={item} index={index} />
+            <ChatListItem key={index} item={item} index={index} />
           )}
         />
       </LinearGradient>

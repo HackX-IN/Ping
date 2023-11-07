@@ -11,13 +11,20 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate;
 import expo.modules.ReactActivityDelegateWrapper;
 
 public class MainActivity extends ReactActivity {
+ 
+
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+     super.onCreate(savedInstanceState);
     // Set the theme to AppTheme BEFORE onCreate to support 
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+      setShowWhenLocked(true);
+    }
     setTheme(R.style.AppTheme);
-    super.onCreate(null);
+    
   }
 
   /**

@@ -152,13 +152,25 @@ const Register = () => {
             <Text style={styles.heading}>Create</Text>
             <Text style={styles.heading}>Account</Text>
 
-            <TouchableOpacity style={styles.button} onPress={pickImage}>
-              <Text style={styles.buttonText}>Pick Image</Text>
+            <TouchableOpacity
+              onPress={pickImage}
+              className="p-4 bg-white rounded-full"
+            >
+              <Image
+                source={{
+                  uri: "https://cdn-icons-png.flaticon.com/128/1042/1042339.png",
+                }}
+                className="h-20 w-20"
+              />
             </TouchableOpacity>
             {selectedImage && (
               <Image
                 source={{ uri: selectedImage }}
-                style={{ width: 100, height: 100, borderRadius: 50 }}
+                style={{
+                  width: widthPercentageToDP(25),
+                  height: widthPercentageToDP(25),
+                  borderRadius: 50,
+                }}
               />
             )}
           </View>
@@ -209,6 +221,7 @@ const Register = () => {
               width: widthPercentageToDP(30),
             }}
             onPress={registerUser}
+            disabled={img === null}
           >
             <Text className="text-white text-xl font-bold">Sign - Up</Text>
           </TouchableOpacity>

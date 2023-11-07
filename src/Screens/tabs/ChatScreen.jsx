@@ -18,11 +18,11 @@ import {
 } from "react-native-responsive-screen";
 import * as ImagePicker from "expo-image-picker";
 import { Entypo, Feather } from "@expo/vector-icons";
-import Customheader from "../../components/Customheader";
+import ChatCustomheader from "../../components/ChatCustomHeader";
 import storage from "@react-native-firebase/storage";
 import ChatFooter from "../../components/ChatFooter";
 import { colors, sizes } from "../../constants";
-import { databaseUrl } from "../../utils/Data";
+import { APPID, APPSIGN, databaseUrl } from "../../utils/Data";
 import { firebase } from "@react-native-firebase/database";
 import { useUserContext } from "../../Hooks/UserApi";
 import SimpleToast from "react-native-simple-toast";
@@ -41,43 +41,6 @@ const ChatScreen = ({ route, navigation }) => {
   const [allChat, setallChat] = React.useState([]);
   const [playbackStatus, setPlaybackStatus] = useState(null);
   const { setUserData, user } = useUserContext();
-
-  useEffect(() => {
-    const sampleMessages = [
-      {
-        text: "Hello!",
-        sender: "receiver",
-        type: "text",
-        profilePic: "https://cdn-icons-png.flaticon.com/128/4140/4140037.png",
-        timestamp: new Date(),
-      },
-      {
-        image:
-          "https://insomniac.games/wp-content/uploads/2018/09/Spider-Man_PS4_Selfie_Photo_Mode_LEGAL.jpg",
-        sender: "sender",
-        type: "image",
-        profilePic: "https://cdn-icons-png.flaticon.com/128/4140/4140037.png",
-        timestamp: new Date(),
-      },
-      {
-        audio:
-          "file:///data/user/0/host.exp.exponent/cache/ExperienceData/%2540anonymous%252Fping-b0e0f834-1c43-4e5e-99ab-acf6d9a536ce/Audio/recording-728ddd73-ab2e-4027-9436-92a327e27294.m4a",
-        sender: "sender",
-        type: "audio",
-        profilePic: "https://cdn-icons-png.flaticon.com/128/4140/4140037.png",
-        timestamp: new Date(),
-      },
-      {
-        text: "Hello how Are you!",
-        sender: "receiver",
-        type: "text",
-        profilePic: "https://cdn-icons-png.flaticon.com/128/4140/4140037.png",
-        timestamp: new Date(),
-      },
-    ];
-
-    setMessages(sampleMessages);
-  }, []);
 
   useEffect(() => {
     const onChildAdd = firebase
@@ -292,11 +255,12 @@ const ChatScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={[colors.bg, colors.black]} style={styles.flex1}>
-        <Customheader
+        <ChatCustomheader
           text={receiverData?.name}
           icon1="chevron-left"
           icon2="phone-call"
           onpress={() => navigation.goBack()}
+          item={receiverData}
         />
 
         <ScrollView
@@ -306,7 +270,7 @@ const ChatScreen = ({ route, navigation }) => {
           {allChat.map((msg, index) => (
             <>
               <View
-                key={index}
+                key={msg.id.toString()}
                 style={[
                   styles.messageBubble,
                   msg.from === user.id
@@ -362,6 +326,8 @@ const ChatScreen = ({ route, navigation }) => {
                         borderRadius: sizes.large,
                         alignItems: "center",
                         justifyContent: "center",
+                        flexDirection: "row",
+                        gap: 5,
                       }}
                     >
                       <Feather
@@ -369,7 +335,19 @@ const ChatScreen = ({ route, navigation }) => {
                         size={22}
                         color={colors.white}
                       />
+                      {audioDuration > 0 && (
+                        <Text
+                          style={{
+                            color: colors.white,
+                            fontSize: heightPercentageToDP(1.4),
+                            textAlign: "left",
+                          }}
+                        >
+                          {audioDuration.toFixed() + ".0"}
+                        </Text>
+                      )}
                     </TouchableOpacity>
+
                     <Text
                       style={{
                         color: colors.white,

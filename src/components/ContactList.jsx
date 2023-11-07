@@ -9,7 +9,7 @@ import {
 
 const ContactList = ({ phoneNumber, index, name, item, onPress }) => {
   return (
-    <TouchableOpacity onPress={() => onPress(item)}>
+    <TouchableOpacity onPress={() => onPress(item)} key={item.id}>
       <View className="flex-row justify-between items-center p-3  ">
         <View className="flex-row items-center gap-3">
           <Image

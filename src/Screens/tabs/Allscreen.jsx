@@ -177,7 +177,7 @@ const Allscreen = () => {
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
             <ContactList
-              key={index}
+              key={item.id.toString()}
               name={item.name}
               phoneNumber={item.number}
               item={item}

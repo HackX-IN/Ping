@@ -11,8 +11,18 @@ import {
 } from "react-native-responsive-screen";
 import { useUserContext } from "../Hooks/UserApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ZegoSendCallInvitationButton } from "@zegocloud/zego-uikit-prebuilt-call-rn";
 
-const Customheader = ({ text, text2, image, icon1, icon2, color, onpress }) => {
+const Customheader = ({
+  text,
+  text2,
+  image,
+  icon1,
+  icon2,
+  color,
+  onpress,
+  item,
+}) => {
   const { setUserData, user } = useUserContext();
   const navigation = useNavigation();
   const Logout = async () => {
@@ -81,11 +91,13 @@ const Customheader = ({ text, text2, image, icon1, icon2, color, onpress }) => {
           </Text>
         </TouchableOpacity>
       ) : (
-        <Feather
-          name={icon2}
-          size={21}
-          color={color ? colors.lightwhite : colors.link}
-        />
+        <>
+          <Feather
+            name={icon2}
+            size={21}
+            color={color ? colors.lightwhite : colors.link}
+          />
+        </>
       )}
     </View>
   );
@@ -94,3 +106,14 @@ const Customheader = ({ text, text2, image, icon1, icon2, color, onpress }) => {
 export default Customheader;
 
 const styles = StyleSheet.create({});
+
+// //  <ZegoSendCallInvitationButton
+// invitees={[{ userID: item?.number, userName: item?.name }]}
+// isVideoCall={false}
+// resourceID={"zegouikit_call"}
+// />
+// <ZegoSendCallInvitationButton
+// invitees={[{ userID: item?.number, userName: item?.name }]}
+// isVideoCall={true}
+// resourceID={"zegouikit_call"}
+// />

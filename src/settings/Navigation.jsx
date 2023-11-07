@@ -4,7 +4,11 @@ import { All, Calls, Camera, Chat, Home } from "../Screens/tabs/index";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { colors, sizes } from "../constants/index";
-
+import {
+  ZegoCallInvitationDialog,
+  ZegoUIKitPrebuiltCallWaitingScreen,
+  ZegoUIKitPrebuiltCallInCallScreen,
+} from "@zegocloud/zego-uikit-prebuilt-call-rn";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -50,15 +54,30 @@ export default function Navigation() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <ZegoCallInvitationDialog />
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={user ? "Main" : "Auth"}
+      >
         {user ? (
           <>
             <Stack.Screen name="Main" component={MyTabs} />
             <Stack.Screen name="Chat" component={Chat} />
+            <Stack.Screen
+              options={{ headerShown: false }}
+              // DO NOT change the name
+              name="ZegoUIKitPrebuiltCallWaitingScreen"
+              component={ZegoUIKitPrebuiltCallWaitingScreen}
+            />
+            <Stack.Screen
+              options={{ headerShown: false }}
+              // DO NOT change the name
+              name="ZegoUIKitPrebuiltCallInCallScreen"
+              component={ZegoUIKitPrebuiltCallInCallScreen}
+            />
           </>
         ) : (
           <>
-            <Stack.Screen name="Onboarding" component={Onboarding} />
             <Stack.Screen name="Auth" component={AuthStack} />
           </>
         )}
@@ -88,6 +107,7 @@ function MyTabs() {
         tabBarInactiveTintColor: colors.white,
         headerShadowVisible: false,
       }}
+      initialRouteName="Home"
     >
       <Tab.Screen
         name="Calls"
@@ -135,6 +155,7 @@ function AuthStack() {
       screenOptions={{ headerShown: false }}
       initialRouteName="Login"
     >
+      <Stack.Screen name="Onboarding" component={Onboarding} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
     </Stack.Navigator>
