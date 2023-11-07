@@ -10,7 +10,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Entypo, Feather } from "@expo/vector-icons";
 import { sizes, colors } from "../constants/index.tsx";
 import { Audio } from "expo-av";
-import * as ImagePicker from "expo-image-picker";
 
 import {
   heightPercentageToDP,
@@ -23,96 +22,11 @@ const ChatFooter = ({
   showEmoji,
   setShowEmoji,
   onSend,
+  pickImage,
+  recording,
+  startRecording,
+  stopRecording,
 }) => {
-  const [recording, setRecording] = useState(null);
-  const [audioURI, setAudioURI] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioPlayer = useRef(new Audio.Sound());
-  const [audioDuration, setAudioDuration] = useState(0);
-
-  const [playbackStatus, setPlaybackStatus] = useState(null);
-
-  // useEffect(() => {
-  //   if (audioPlayer.current) {
-  //     audioPlayer.current.setOnPlaybackStatusUpdate((status) => {
-  //       setPlaybackStatus(status);
-  //       if (status.isLoaded) {
-  //         setAudioDuration(status.durationMillis / 1000);
-  //         if (status.didJustFinish) {
-  //           setIsPlaying(false);
-  //         }
-  //       }
-  //     });
-  //   }
-  // }, [audioPlayer]);
-
-  // async function playAudio() {
-  //   try {
-  //     if (audioURI) {
-  //       if (isPlaying) {
-  //         await audioPlayer.current.pauseAsync();
-  //       } else {
-  //         await audioPlayer.current.loadAsync({ uri: audioURI });
-  //         await audioPlayer.current.playAsync();
-  //         setIsPlaying(true);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to play audio", error);
-  //   }
-  // }
-
-  async function startRecording() {
-    try {
-      console.log("Requesting permissions..");
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      console.log("Starting recording..");
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      setRecording(recording);
-      console.log("Recording started");
-    } catch (err) {
-      console.error("Failed to start recording", err);
-    }
-  }
-
-  async function stopRecording() {
-    console.log("Stopping recording..");
-    setRecording(undefined);
-    await recording.stopAndUnloadAsync();
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-    });
-    const uri = recording.getURI();
-    console.log("Recording stopped and stored at", uri);
-    setAudioURI(uri);
-  }
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      alert("Permission to access media library is required!");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
-
-    if (!result.cancelled) {
-      // Handle the selected image here (e.g., upload to a server or display it)
-      console.log(result.uri);
-    }
-  };
-
   return (
     <>
       <View
@@ -150,7 +64,7 @@ const ChatFooter = ({
         {message.length === 0 && (
           <>
             <TouchableOpacity
-              onPress={pickImage}
+              onPress={() => pickImage()}
               style={{
                 backgroundColor: colors.primary,
                 padding: sizes.padding,
@@ -179,7 +93,7 @@ const ChatFooter = ({
         )}
         {message.length > 0 && (
           <TouchableOpacity
-            onPress={() => onSend(message)}
+            onPress={() => onSend()}
             style={{
               left: heightPercentageToDP(5),
               alignItems: "center",
@@ -190,29 +104,6 @@ const ChatFooter = ({
           </TouchableOpacity>
         )}
       </View>
-      {/* {audioURI && (
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity
-            onPress={playAudio}
-            style={{
-              backgroundColor: colors.primary,
-              padding: sizes.padding,
-              borderRadius: sizes.large,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Feather
-              name={isPlaying ? "pause-circle" : "play-circle"}
-              size={22}
-              color={colors.white}
-            />
-          </TouchableOpacity>
-          <Text style={{ color: colors.lightwhite }}>
-            {audioDuration.toFixed(1)}s
-          </Text>
-        </View>
-      )} */}
     </>
   );
 };

@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { All, Calls, Camera, Chat, Home } from "../Screens/tabs/index";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { colors } from "../constants/index";
+import { colors, sizes } from "../constants/index";
 
 import {
   widthPercentageToDP as wp,
@@ -11,16 +11,57 @@ import {
 } from "react-native-responsive-screen";
 import { Feather } from "@expo/vector-icons";
 import { Login, Onboarding, Register } from "../Screens/Auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useUserContext } from "../Hooks/UserApi";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 const Stack = createNativeStackNavigator();
 
 export default function Navigation() {
+  const [loginChk, setloginChk] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const { setUserData, user } = useUserContext();
+
+  useEffect(() => {
+    getUser();
+  }, []);
+
+  const getUser = async () => {
+    let data = await AsyncStorage.getItem("userData");
+    setLoading(true);
+    if (data != null) {
+      setUserData(JSON.parse(data));
+      setloginChk(false);
+      setLoading(false);
+    } else {
+      setloginChk(false);
+      setLoading(false);
+    }
+  };
+
+  if (loading || loginChk) {
+    return (
+      <View className="justify-center items-center flex-1 bg-gray-700 ">
+        <ActivityIndicator size={sizes.heading} color={colors.white} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Auth" component={AuthStack} />
-        <Stack.Screen name="Main" component={MyTabs} />
-        <Stack.Screen name="Chat" component={Chat} />
+        {user ? (
+          <>
+            <Stack.Screen name="Main" component={MyTabs} />
+            <Stack.Screen name="Chat" component={Chat} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Onboarding" component={Onboarding} />
+            <Stack.Screen name="Auth" component={AuthStack} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -92,9 +133,8 @@ function AuthStack() {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="Onboarding"
+      initialRouteName="Login"
     >
-      <Stack.Screen name="Onboarding" component={Onboarding} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
     </Stack.Navigator>

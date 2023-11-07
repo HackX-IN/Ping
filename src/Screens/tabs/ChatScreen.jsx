@@ -16,13 +16,21 @@ import {
   heightPercentageToDP,
   widthPercentageToDP,
 } from "react-native-responsive-screen";
+import * as ImagePicker from "expo-image-picker";
 import { Entypo, Feather } from "@expo/vector-icons";
 import Customheader from "../../components/Customheader";
+import storage from "@react-native-firebase/storage";
 import ChatFooter from "../../components/ChatFooter";
 import { colors, sizes } from "../../constants";
+import { databaseUrl } from "../../utils/Data";
+import { firebase } from "@react-native-firebase/database";
+import { useUserContext } from "../../Hooks/UserApi";
+import SimpleToast from "react-native-simple-toast";
+import uuid from "react-native-uuid";
 
 const ChatScreen = ({ route, navigation }) => {
-  const { item } = route.params;
+  const { receiverData } = route.params;
+  console.log(receiverData);
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -30,8 +38,9 @@ const ChatScreen = ({ route, navigation }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioPlayer = useRef(new Audio.Sound());
   const [audioDuration, setAudioDuration] = useState(0);
-
+  const [allChat, setallChat] = React.useState([]);
   const [playbackStatus, setPlaybackStatus] = useState(null);
+  const { setUserData, user } = useUserContext();
 
   useEffect(() => {
     const sampleMessages = [
@@ -70,31 +79,132 @@ const ChatScreen = ({ route, navigation }) => {
     setMessages(sampleMessages);
   }, []);
 
-  const sendMessage = (message, type = "text") => {
-    const newMessage = {
-      text: message,
-      sender: "sender",
-      type,
-      timestamp: new Date(),
+  useEffect(() => {
+    const onChildAdd = firebase
+      .app()
+      .database(databaseUrl)
+      .ref("/messages/" + receiverData.roomId)
+      .on("child_added", (snapshot) => {
+        // console.log('A new node has been added', snapshot.val());
+        setallChat((state) => [snapshot.val(), ...state]);
+      });
+    // Stop listening for updates when no longer required
+    return () =>
+      firebase
+        .app()
+        .database(databaseUrl)
+        .ref("/messages" + receiverData.roomId)
+        .off("child_added", onChildAdd);
+  }, [receiverData.roomId]);
+
+  const msgvalid = (txt) => txt && txt.replace(/\s/g, "").length;
+  const currentTime = new Date();
+
+  // Get the current time in hours, minutes, and seconds
+  const hours = currentTime.getHours();
+  const minutes = currentTime.getMinutes();
+  const seconds = currentTime.getSeconds();
+
+  // Create a formatted time string
+  const formattedTime = `${hours}:${minutes}`;
+
+  const sendMsg = () => {
+    if (message == "" || msgvalid(message) == 0) {
+      SimpleToast.show("Enter something....");
+      return false;
+    }
+
+    let msgData = {
+      roomId: receiverData.roomId,
+      message: message,
+      from: user?.id,
+      to: receiverData.id,
+      sendTime: formattedTime,
+      msgType: "text",
     };
-    setMessages([...messages, newMessage]);
-    setMessage("");
+    updateMessagesToFirebase(msgData);
+  };
+  const updateMessagesToFirebase = async (msgData) => {
+    const newReference = firebase
+      .app()
+      .database(databaseUrl)
+      .ref("/messages/" + receiverData.roomId)
+      .push();
+    msgData.id = newReference.key;
+    newReference.set(msgData).then(() => {
+      let chatListupdate = {
+        lastMsg: msgData.message,
+        sendTime: msgData.sendTime,
+        msgType: msgData.msgType,
+      };
+      firebase
+        .app()
+        .database(databaseUrl)
+        .ref("/chatlist/" + receiverData?.id + "/" + user?.id)
+        .update(chatListupdate)
+        .then(() => console.log("Data updated."));
+      firebase
+        .app()
+        .database(databaseUrl)
+        .ref("/chatlist/" + user?.id + "/" + receiverData?.id)
+        .update(chatListupdate)
+        .then(() => console.log("Data updated."));
+
+      setMessage("");
+      // setShowEmoji(!showEmoji);
+    });
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Permission to access media library is required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (!result.cancelled) {
+      console.log(result.uri);
+      const { uri } = result;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const imageId = uuid.v4();
+
+      const imageRef = storage().ref().child(`chatMedia/${imageId}`);
+
+      await imageRef.put(blob);
+
+      const downloadURL = await imageRef.getDownloadURL();
+      let msgData = {
+        roomId: receiverData.roomId,
+        message: downloadURL,
+        from: user?.id,
+        to: receiverData.id,
+        sendTime: formattedTime,
+        msgType: "image",
+      };
+      updateMessagesToFirebase(msgData);
+    }
   };
 
   useEffect(() => {
     scrollViewRef.current.scrollToEnd({ animated: true });
   }, [messages]);
 
-  async function playAudio() {
+  async function playAudio(msg) {
     try {
-      if (
-        "file:///data/user/0/host.exp.exponent/cache/ExperienceData/%2540anonymous%252Fping-b0e0f834-1c43-4e5e-99ab-acf6d9a536ce/Audio/recording-22060371-34da-44ba-9db2-deb20c5aef3c.m4a"
-      ) {
+      if (msg) {
         if (isPlaying) {
           await audioPlayer.current.pauseAsync();
         } else {
           await audioPlayer.current.loadAsync({
-            uri: "file:///data/user/0/host.exp.exponent/cache/ExperienceData/%2540anonymous%252Fping-b0e0f834-1c43-4e5e-99ab-acf6d9a536ce/Audio/recording-22060371-34da-44ba-9db2-deb20c5aef3c.m4a",
+            uri: msg,
           });
           await audioPlayer.current.playAsync();
           setIsPlaying(true);
@@ -118,11 +228,72 @@ const ChatScreen = ({ route, navigation }) => {
     }
   }, [audioPlayer]);
 
+  const [recording, setRecording] = useState(null);
+  const [audioURI, setAudioURI] = useState(null);
+
+  async function startRecording() {
+    try {
+      console.log("Requesting permissions..");
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      console.log("Starting recording..");
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+      console.log("Recording started");
+    } catch (err) {
+      console.error("Failed to start recording", err);
+    }
+  }
+
+  async function stopRecording() {
+    console.log("Stopping recording..");
+    setRecording(undefined);
+    await recording.stopAndUnloadAsync();
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+    });
+    const uri = recording.getURI();
+    console.log("Recording stopped and stored at", uri);
+    uploadRecordingToFirebase(uri);
+  }
+
+  async function uploadRecordingToFirebase(uri) {
+    try {
+      const AudioId = uuid.v4();
+      const audioRef = storage().ref().child(`audio/${AudioId}`);
+
+      await audioRef.putFile(uri);
+
+      const downloadURL = await audioRef.getDownloadURL();
+
+      setAudioURI(downloadURL);
+      let msgData = {
+        roomId: receiverData.roomId,
+        message: downloadURL,
+        from: user?.id,
+        to: receiverData.id,
+        sendTime: formattedTime,
+        msgType: "audio",
+      };
+
+      updateMessagesToFirebase(msgData);
+      console.log("Audio uploaded to Firebase Storage:", downloadURL);
+    } catch (error) {
+      console.error("Error uploading audio to Firebase Storage:", error);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={[colors.bg, colors.black]} style={styles.flex1}>
         <Customheader
-          text={item.title}
+          text={receiverData?.name}
           icon1="chevron-left"
           icon2="phone-call"
           onpress={() => navigation.goBack()}
@@ -132,18 +303,18 @@ const ChatScreen = ({ route, navigation }) => {
           ref={scrollViewRef}
           contentContainerStyle={styles.messageContainer}
         >
-          {messages.map((msg, index) => (
+          {allChat.map((msg, index) => (
             <>
               <View
                 key={index}
                 style={[
                   styles.messageBubble,
-                  msg.sender === "sender"
+                  msg.from === user.id
                     ? styles.senderBubble
                     : styles.receiverBubble,
                 ]}
               >
-                {msg.type === "text" && (
+                {msg.msgType === "text" && (
                   <View>
                     <Text
                       style={{
@@ -151,22 +322,23 @@ const ChatScreen = ({ route, navigation }) => {
                         fontSize: heightPercentageToDP(1.9),
                       }}
                     >
-                      {msg.text}
+                      {msg.message}
                     </Text>
                     <Text
                       style={{
                         color: colors.white,
                         fontSize: heightPercentageToDP(1.4),
+                        textAlign: "right",
                       }}
                     >
-                      {msg.timestamp.toLocaleTimeString()}
+                      {msg.sendTime}
                     </Text>
                   </View>
                 )}
-                {msg.type === "image" && (
+                {msg.msgType === "image" && (
                   <View>
                     <Image
-                      source={{ uri: msg.image }}
+                      source={{ uri: msg.message }}
                       style={styles.profilePic}
                     />
                     <Text
@@ -176,14 +348,14 @@ const ChatScreen = ({ route, navigation }) => {
                         textAlign: "right",
                       }}
                     >
-                      {msg.timestamp.toLocaleTimeString()}
+                      {msg.sendTime}
                     </Text>
                   </View>
                 )}
-                {msg.type === "audio" && (
+                {msg.msgType === "audio" && (
                   <View>
                     <TouchableOpacity
-                      onPress={playAudio}
+                      onPress={() => playAudio(msg?.message)}
                       style={{
                         backgroundColor: colors.primary,
                         padding: sizes.padding,
@@ -205,7 +377,7 @@ const ChatScreen = ({ route, navigation }) => {
                         textAlign: "right",
                       }}
                     >
-                      {msg.timestamp.toLocaleTimeString()}
+                      {msg.sendTime}
                     </Text>
                   </View>
                 )}
@@ -219,7 +391,12 @@ const ChatScreen = ({ route, navigation }) => {
           setMessage={setMessage}
           showEmoji={showEmoji}
           setShowEmoji={setShowEmoji}
-          onSend={sendMessage}
+          onSend={sendMsg}
+          pickImage={pickImage}
+          recording={recording}
+          setRecording={setRecording}
+          startRecording={startRecording}
+          stopRecording={stopRecording}
         />
         {showEmoji && (
           <View style={styles.emojiModal}>

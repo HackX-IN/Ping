@@ -1,13 +1,35 @@
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Customheader from "../../components/Customheader";
 import { colors } from "../../constants";
 import ChatListItem from "../../components/ChatListItem";
 import { heightPercentageToDP } from "react-native-responsive-screen";
 import { Data } from "../../constants/Data";
+import { firebase } from "@react-native-firebase/database";
+import { databaseUrl } from "../../utils/Data";
+import { useUserContext } from "../../Hooks/UserApi";
+import { useFocusEffect } from "@react-navigation/core";
 
 const HomeScreen = () => {
+  const [chatList, setchatList] = useState([]);
+  const { setUserData, user } = useUserContext();
+
+  useFocusEffect(() => {
+    getChatlist();
+  });
+
+  const getChatlist = async () => {
+    firebase
+      .app()
+      .database(databaseUrl)
+      .ref("/chatlist/" + user?.id)
+      .on("value", (snapshot) => {
+        if (snapshot.val() != null) {
+          setchatList(Object.values(snapshot.val()));
+        }
+      });
+  };
   return (
     <SafeAreaView
       className="flex-1"
@@ -28,10 +50,10 @@ const HomeScreen = () => {
             paddingVertical: heightPercentageToDP(2),
             paddingHorizontal: heightPercentageToDP(0.5),
           }}
-          data={Data}
+          data={chatList}
           keyExtractor={(item) => item.title}
           renderItem={({ item, index }) => (
-            <ChatListItem key={index} item={item} index={index} />
+            <ChatListItem key={item.id} item={item} index={index} />
           )}
         />
       </LinearGradient>
