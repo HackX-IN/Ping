@@ -124,6 +124,7 @@ const Allscreen = () => {
             emailId: user.emailId,
             number: user.number,
             lastMsg: "",
+            msgTime: "",
           };
           firebase
             .app()
@@ -135,6 +136,7 @@ const Allscreen = () => {
           delete data["password"];
           data.lastMsg = "";
           data.roomId = roomId;
+          data.msgTime = "";
           firebase
             .app()
             .database(databaseUrl)

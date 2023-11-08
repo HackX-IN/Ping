@@ -22,6 +22,7 @@ const Customheader = ({
   color,
   onpress,
   item,
+  SearchToggle,
 }) => {
   const { setUserData, user } = useUserContext();
   const navigation = useNavigation();
@@ -92,11 +93,21 @@ const Customheader = ({
         </TouchableOpacity>
       ) : (
         <>
-          <Feather
-            name={icon2}
-            size={21}
-            color={color ? colors.lightwhite : colors.link}
-          />
+          {icon2 === "search" ? (
+            <TouchableOpacity onPress={() => SearchToggle()}>
+              <Feather
+                name={icon2}
+                size={21}
+                color={color ? colors.lightwhite : colors.link}
+              />
+            </TouchableOpacity>
+          ) : (
+            <Feather
+              name={icon2}
+              size={21}
+              color={color ? colors.lightwhite : colors.link}
+            />
+          )}
         </>
       )}
     </View>

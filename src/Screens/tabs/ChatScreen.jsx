@@ -8,6 +8,8 @@ import {
   Text,
   Image,
   TouchableOpacity,
+  FlatList,
+  Keyboard,
 } from "react-native";
 import { Audio } from "expo-av";
 import EmojiModal from "react-native-emoji-modal";
@@ -86,6 +88,7 @@ const ChatScreen = ({ route, navigation }) => {
       msgType: "text",
     };
     updateMessagesToFirebase(msgData);
+    Keyboard.dismiss();
   };
   const updateMessagesToFirebase = async (msgData) => {
     const newReference = firebase
@@ -99,6 +102,7 @@ const ChatScreen = ({ route, navigation }) => {
         lastMsg: msgData.message,
         sendTime: msgData.sendTime,
         msgType: msgData.msgType,
+        msgTime: msgData.sendTime,
       };
       firebase
         .app()
@@ -263,107 +267,106 @@ const ChatScreen = ({ route, navigation }) => {
           item={receiverData}
         />
 
-        <ScrollView
+        <FlatList
           ref={scrollViewRef}
+          data={allChat}
+          keyExtractor={(msg) => msg.id.toString()}
+          inverted={true}
           contentContainerStyle={styles.messageContainer}
-        >
-          {allChat.map((msg, index) => (
-            <>
-              <View
-                key={msg.id.toString()}
-                style={[
-                  styles.messageBubble,
-                  msg.from === user.id
-                    ? styles.senderBubble
-                    : styles.receiverBubble,
-                ]}
-              >
-                {msg.msgType === "text" && (
-                  <View>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: heightPercentageToDP(1.9),
-                      }}
-                    >
-                      {msg.message}
-                    </Text>
-                    <Text
-                      style={{
-                        color: colors.white,
-                        fontSize: heightPercentageToDP(1.4),
-                        textAlign: "right",
-                      }}
-                    >
-                      {msg.sendTime}
-                    </Text>
-                  </View>
-                )}
-                {msg.msgType === "image" && (
-                  <View>
-                    <Image
-                      source={{ uri: msg.message }}
-                      style={styles.profilePic}
+          renderItem={({ item: msg, index }) => (
+            <View
+              key={index}
+              style={[
+                styles.messageBubble,
+                msg.from === user.id
+                  ? styles.senderBubble
+                  : styles.receiverBubble,
+              ]}
+            >
+              {msg.msgType === "text" && (
+                <View>
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: heightPercentageToDP(1.9),
+                    }}
+                  >
+                    {msg.message}
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.white,
+                      fontSize: heightPercentageToDP(1.4),
+                      textAlign: "right",
+                    }}
+                  >
+                    {msg.sendTime}
+                  </Text>
+                </View>
+              )}
+              {msg.msgType === "image" && (
+                <View>
+                  <Image
+                    source={{ uri: msg.message }}
+                    style={styles.profilePic}
+                  />
+                  <Text
+                    style={{
+                      color: colors.white,
+                      fontSize: heightPercentageToDP(1.4),
+                      textAlign: "right",
+                    }}
+                  >
+                    {msg.sendTime}
+                  </Text>
+                </View>
+              )}
+              {msg.msgType === "audio" && (
+                <View>
+                  <TouchableOpacity
+                    onPress={() => playAudio(msg?.message)}
+                    style={{
+                      backgroundColor: colors.primary,
+                      padding: sizes.padding,
+                      borderRadius: sizes.large,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      gap: 5,
+                    }}
+                  >
+                    <Feather
+                      name={isPlaying ? "pause-circle" : "play-circle"}
+                      size={22}
+                      color={colors.white}
                     />
-                    <Text
-                      style={{
-                        color: colors.white,
-                        fontSize: heightPercentageToDP(1.4),
-                        textAlign: "right",
-                      }}
-                    >
-                      {msg.sendTime}
-                    </Text>
-                  </View>
-                )}
-                {msg.msgType === "audio" && (
-                  <View>
-                    <TouchableOpacity
-                      onPress={() => playAudio(msg?.message)}
-                      style={{
-                        backgroundColor: colors.primary,
-                        padding: sizes.padding,
-                        borderRadius: sizes.large,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexDirection: "row",
-                        gap: 5,
-                      }}
-                    >
-                      <Feather
-                        name={isPlaying ? "pause-circle" : "play-circle"}
-                        size={22}
-                        color={colors.white}
-                      />
-                      {audioDuration > 0 && (
-                        <Text
-                          style={{
-                            color: colors.white,
-                            fontSize: heightPercentageToDP(1.4),
-                            textAlign: "left",
-                          }}
-                        >
-                          {audioDuration.toFixed() + ".0"}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
+                    {audioDuration > 0 && (
+                      <Text
+                        style={{
+                          color: colors.white,
+                          fontSize: heightPercentageToDP(1.4),
+                          textAlign: "left",
+                        }}
+                      >
+                        {audioDuration.toFixed() + ".0"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
 
-                    <Text
-                      style={{
-                        color: colors.white,
-                        fontSize: heightPercentageToDP(1.4),
-                        textAlign: "right",
-                      }}
-                    >
-                      {msg.sendTime}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </>
-          ))}
-        </ScrollView>
-
+                  <Text
+                    style={{
+                      color: colors.white,
+                      fontSize: heightPercentageToDP(1.4),
+                      textAlign: "right",
+                    }}
+                  >
+                    {msg.sendTime}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        />
         <ChatFooter
           message={message}
           setMessage={setMessage}
@@ -402,6 +405,7 @@ const styles = StyleSheet.create({
   },
   messageContainer: {
     padding: sizes.medium,
+    paddingVertical: heightPercentageToDP(8),
   },
   messageBubble: {
     padding: sizes.xxsmall,

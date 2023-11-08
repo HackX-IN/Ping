@@ -1,8 +1,17 @@
-import { FlatList, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import {
+  Button,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Customheader from "../../components/Customheader";
-import { colors } from "../../constants";
+import { colors, sizes } from "../../constants";
 import ChatListItem from "../../components/ChatListItem";
 import { heightPercentageToDP } from "react-native-responsive-screen";
 import { Data } from "../../constants/Data";
@@ -10,14 +19,19 @@ import { firebase } from "@react-native-firebase/database";
 import { databaseUrl } from "../../utils/Data";
 import { useUserContext } from "../../Hooks/UserApi";
 import { useFocusEffect } from "@react-navigation/core";
+import { Feather } from "@expo/vector-icons";
 
 const HomeScreen = () => {
+  const [originalChatList, setOriginalChatList] = useState([]);
   const [chatList, setchatList] = useState([]);
-  const { setUserData, user } = useUserContext();
 
-  useFocusEffect(() => {
+  const { setUserData, user } = useUserContext();
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchText, setSearchText] = useState("");
+
+  useEffect(() => {
     getChatlist();
-  });
+  }, [chatList]);
 
   const getChatlist = async () => {
     firebase
@@ -26,9 +40,26 @@ const HomeScreen = () => {
       .ref("/chatlist/" + user?.id)
       .on("value", (snapshot) => {
         if (snapshot.val() != null) {
-          setchatList(Object.values(snapshot.val()));
+          const chatListData = Object.values(snapshot.val());
+          setOriginalChatList(chatListData);
+          setchatList(chatListData);
         }
       });
+  };
+
+  const handleSearch = () => {
+    const lowercaseSearchText = searchText.toLowerCase();
+    const filteredChatList = originalChatList.filter((item) => {
+      return item.name.toLowerCase().includes(lowercaseSearchText);
+    });
+
+    setchatList(filteredChatList);
+    setSearchText("");
+    setIsSearching(false);
+  };
+
+  const SearchToggle = () => {
+    setIsSearching(!isSearching);
   };
   return (
     <SafeAreaView
@@ -44,7 +75,21 @@ const HomeScreen = () => {
           icon1="square-edit-outline"
           icon2="search"
           color={colors.lightwhite}
+          SearchToggle={SearchToggle}
         />
+        {isSearching && (
+          <View className="flex-row justify-between items-center w-[90%] bg-white py-2  m-auto mt-2 rounded-xl">
+            <TextInput
+              placeholder="Search..."
+              value={searchText}
+              onChangeText={(text) => setSearchText(text)}
+              className="text-black text-base font-normal w-[80%] px-3 "
+            />
+            <TouchableOpacity className="mr-2" onPress={handleSearch}>
+              <Feather name="search" size={sizes.large} color={colors.link} />
+            </TouchableOpacity>
+          </View>
+        )}
         <FlatList
           contentContainerStyle={{
             paddingVertical: heightPercentageToDP(2),

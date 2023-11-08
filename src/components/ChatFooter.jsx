@@ -32,7 +32,7 @@ const ChatFooter = ({
       <View
         style={{
           position: "absolute",
-          bottom: heightPercentageToDP(2),
+          bottom: heightPercentageToDP(0),
           width: widthPercentageToDP(95),
           padding: sizes.medium,
           backgroundColor: colors.bginput,

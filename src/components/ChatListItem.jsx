@@ -56,12 +56,12 @@ const ChatListItem = ({ item, index }) => {
             </Text>
           </View>
         </View>
-        {/* <Text
+        <Text
           className="text-white  font-light "
           style={{ fontSize: sizes.small }}
         >
-          Now
-        </Text> */}
+          {item.sendTime}
+        </Text>
       </View>
     </TouchableOpacity>
   );

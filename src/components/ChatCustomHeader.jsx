@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   StyleSheet,
+  Image,
 } from "react-native";
 import { Entypo, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors, sizes } from "../constants";
@@ -68,7 +69,7 @@ const Customheader = ({
   return (
     <View
       style={{
-        backgroundColor: colors.lightwhite,
+        backgroundColor: colors.gray,
         borderBottomLeftRadius: hp(2.5),
         borderBottomRightRadius: hp(2.5),
         paddingTop: hp(7),
@@ -90,16 +91,22 @@ const Customheader = ({
             color={icon1 === "chevron-left" ? colors.white : colors.lightwhite}
           />
         </TouchableOpacity>
-        <Text
-          style={{
-            color: "white",
-            fontSize: sizes.base,
-            textAlign: "center",
-            fontWeight: "bold",
-          }}
-        >
-          {text}
-        </Text>
+        <View className="items-center gap-2">
+          <Image
+            source={{ uri: item?.image }}
+            style={{ width: wp(10), height: wp(10), borderRadius: wp(5) }}
+          />
+          <Text
+            style={{
+              color: "white",
+              fontSize: sizes.base,
+              textAlign: "center",
+              fontWeight: "bold",
+            }}
+          >
+            {text}
+          </Text>
+        </View>
         <TouchableOpacity onPress={toggleModal}>
           <Entypo name="dots-three-vertical" size={24} color="white" />
         </TouchableOpacity>
