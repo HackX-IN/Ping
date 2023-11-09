@@ -7,10 +7,12 @@ import {
   widthPercentageToDP,
 } from "react-native-responsive-screen";
 import { useNavigation } from "@react-navigation/core";
+import { useUserContext } from "../Hooks/UserApi";
 
 const ChatListItem = ({ item, index }) => {
   const navigation = useNavigation();
-  console.log(item);
+  const { lastMessage, lastMessageType, lastSentTime } = useUserContext();
+
   return (
     <TouchableOpacity
       key={item.id}
@@ -48,11 +50,11 @@ const ChatListItem = ({ item, index }) => {
               className="text-white  font-light"
               style={{ fontSize: sizes.small }}
             >
-              {item.msgType === "image"
+              {lastMessageType === "image"
                 ? "Image"
-                : item.msgType === "audio"
+                : lastMessageType === "audio"
                 ? "audio"
-                : item.lastMsg}
+                : lastMessage}
             </Text>
           </View>
         </View>
@@ -60,7 +62,7 @@ const ChatListItem = ({ item, index }) => {
           className="text-white  font-light "
           style={{ fontSize: sizes.small }}
         >
-          {item.sendTime}
+          {lastSentTime}
         </Text>
       </View>
     </TouchableOpacity>

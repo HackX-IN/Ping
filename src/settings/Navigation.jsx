@@ -8,6 +8,7 @@ import {
   ZegoCallInvitationDialog,
   ZegoUIKitPrebuiltCallWaitingScreen,
   ZegoUIKitPrebuiltCallInCallScreen,
+  ZegoUIKitPrebuiltCallFloatingMinimizedView,
 } from "@zegocloud/zego-uikit-prebuilt-call-rn";
 import {
   widthPercentageToDP as wp,
@@ -82,6 +83,7 @@ export default function Navigation() {
           </>
         )}
       </Stack.Navigator>
+      <ZegoUIKitPrebuiltCallFloatingMinimizedView />
     </NavigationContainer>
   );
 }
@@ -153,7 +155,7 @@ function AuthStack() {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="Login"
+      initialRouteName="Onboarding"
     >
       <Stack.Screen name="Onboarding" component={Onboarding} />
       <Stack.Screen name="Login" component={Login} />

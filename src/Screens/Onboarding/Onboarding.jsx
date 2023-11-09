@@ -28,7 +28,7 @@ export default function OnboardingScreen() {
     if (onboarded == 1) {
       setShowOnboarding(false);
       setLoading(false);
-      navigation.navigate("Auth");
+      navigation.navigate("Login");
     } else {
       setLoading(false);
       setShowOnboarding(true);
@@ -44,7 +44,7 @@ export default function OnboardingScreen() {
   }
 
   const handleDone = () => {
-    navigation.navigate("Auth");
+    navigation.navigate("Login");
     setItem("onboarded", "1");
   };
 

@@ -8,13 +8,31 @@ export const useUserContext = () => {
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [lastMessage, setLastMessage] = useState("");
+  const [lastMessageType, setLastMessageType] = useState("");
+  const [lastSentTime, setLastSentTime] = useState("");
 
   const setUserData = (userData) => {
     setUser(userData);
   };
 
+  const updateLastMessage = (message, messageType, sentTime) => {
+    setLastMessage(message);
+    setLastMessageType(messageType);
+    setLastSentTime(sentTime);
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUserData }}>
+    <UserContext.Provider
+      value={{
+        user,
+        setUserData,
+        lastMessage,
+        lastMessageType,
+        lastSentTime,
+        updateLastMessage,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

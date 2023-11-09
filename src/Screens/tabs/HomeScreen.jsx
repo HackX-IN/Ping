@@ -21,7 +21,7 @@ import { useUserContext } from "../../Hooks/UserApi";
 import { useFocusEffect } from "@react-navigation/core";
 import { Feather } from "@expo/vector-icons";
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
   const [originalChatList, setOriginalChatList] = useState([]);
   const [chatList, setchatList] = useState([]);
 
@@ -97,6 +97,24 @@ const HomeScreen = () => {
           }}
           data={chatList}
           keyExtractor={(item) => item.id.toString()}
+          ListEmptyComponent={
+            <View
+              style={{ marginTop: heightPercentageToDP(8) }}
+              className=" justify-center text-center items-center   "
+            >
+              <Text className="text-white text-lg text-center font-bold ">
+                No Chats Yet 😔
+              </Text>
+              <TouchableOpacity
+                className="mt-5 p-3 bg-sky-500 rounded-lg"
+                onPress={() => navigation.navigate("All")}
+              >
+                <Text className="text-white text-lg text-center font-bold ">
+                  Click Here To Add Friends
+                </Text>
+              </TouchableOpacity>
+            </View>
+          }
           renderItem={({ item, index }) => (
             <ChatListItem key={index} item={item} index={index} />
           )}

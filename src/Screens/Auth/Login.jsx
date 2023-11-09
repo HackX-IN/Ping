@@ -40,7 +40,7 @@ const Login = () => {
       .database(databaseUrl)
       .ref("users/")
       .orderByChild("emailId")
-      .equalTo(email)
+      .equalTo(email.toLowerCase())
       .once("value")
       .then(async (snapshot) => {
         if (snapshot.val() == null) {
@@ -111,7 +111,7 @@ const Login = () => {
             </TouchableOpacity>
           </View>
           <TouchableOpacity
-            className="justify-center items-center p-1 flex-row gap-2 rounded-lg  "
+            className="justify-center items-center p-2 flex-row  rounded-lg  "
             style={{
               backgroundColor: colors.link,
               width: widthPercentageToDP(30),

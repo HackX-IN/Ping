@@ -160,16 +160,12 @@ const Allscreen = () => {
     >
       <LinearGradient colors={[colors.bg, colors.black]} style={{ flex: 1 }}>
         <Customheader text={user?.name} image={user?.image} text2="Logout" />
-        <Text
-          style={{
-            color: "white",
-            fontSize: 20,
-            fontWeight: "bold",
-            padding: 16,
-          }}
-        >
-          Contacts
-        </Text>
+        {allUser.filter((item) => matchingNumbers.includes(item.number))
+          .length > 0 && (
+          <Text className="font-bold text-white text-lg mx-3 my-3 ">
+            Contacts
+          </Text>
+        )}
         <FlatList
           contentContainerStyle={{
             paddingVertical: heightPercentageToDP(0.5),
@@ -177,6 +173,19 @@ const Allscreen = () => {
           }}
           data={allUser.filter((item) => matchingNumbers.includes(item.number))}
           keyExtractor={(item, index) => index.toString()}
+          ListEmptyComponent={
+            <View
+              style={{ marginTop: heightPercentageToDP(8) }}
+              className=" justify-center text-center items-center   "
+            >
+              <Text className="text-white text-lg text-center font-bold ">
+                No Contacts Or Friends
+              </Text>
+              <Text className="text-white text-lg text-center font-bold ">
+                Found 😔
+              </Text>
+            </View>
+          }
           renderItem={({ item, index }) => (
             <ContactList
               key={item.id.toString()}

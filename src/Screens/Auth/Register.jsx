@@ -24,6 +24,7 @@ import { firebase } from "@react-native-firebase/database";
 import { databaseUrl } from "../../utils/Data";
 
 import SimpleToast from "react-native-simple-toast";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -104,30 +105,66 @@ const Register = () => {
         return false;
       }
 
+      const fcmToken = await AsyncStorage.getItem("Tokens");
       const data = {
         id: uuid.v4(),
         name: name,
-        emailId: email,
+        emailId: email.toLowerCase(),
         password: password,
         number: number,
         image: img,
+        token: fcmToken,
       };
 
       const userPath = `/users/${data.id}`;
+      const TokenPath = `/tokens/${data.id}`;
 
-      firebase
-        .app()
-        .database(databaseUrl)
-        .ref(userPath)
-        .set(data)
-        .then(() => {
-          SimpleToast.show("Register Successfully!");
-          setName("");
-          setEmail("");
-          setPassword("");
-          setImg(null);
-          setSelectedImage(null);
-          navigation.navigate("Login");
+      // Check if a user with the same email or phone number already exists
+      const userRef = firebase.app().database(databaseUrl).ref("/users");
+      userRef
+        .orderByChild("emailId")
+        .equalTo(email.toLowerCase())
+        .once("value", (snapshot) => {
+          if (snapshot.exists()) {
+            SimpleToast.show("User with the same email already exists!");
+            return;
+          } else {
+            userRef
+              .orderByChild("number")
+              .equalTo(number)
+              .once("value", (snapshot) => {
+                if (snapshot.exists()) {
+                  SimpleToast.show(
+                    "User with the same phone number already exists!"
+                  );
+                } else {
+                  // If no user with the same email and phone number, proceed with registration
+                  firebase
+                    .app()
+                    .database(databaseUrl)
+                    .ref(TokenPath)
+                    .set({
+                      token: fcmToken,
+                    })
+                    .then(() => console.log("Token Saved"));
+
+                  firebase
+                    .app()
+                    .database(databaseUrl)
+                    .ref(userPath)
+                    .set(data)
+                    .then(() => {
+                      SimpleToast.show("Register Successfully!");
+                      setName("");
+                      setEmail("");
+                      setPassword("");
+                      setImg(null);
+                      setSelectedImage(null);
+                      navigation.navigate("Login");
+                    });
+                }
+              });
+          }
         });
     } catch (error) {
       console.log(error);
@@ -152,26 +189,28 @@ const Register = () => {
             <Text style={styles.heading}>Create</Text>
             <Text style={styles.heading}>Account</Text>
 
-            <TouchableOpacity
-              onPress={pickImage}
-              className="p-4 bg-white rounded-full"
-            >
-              <Image
-                source={{
-                  uri: "https://cdn-icons-png.flaticon.com/128/1042/1042339.png",
-                }}
-                className="h-20 w-20"
-              />
-            </TouchableOpacity>
-            {selectedImage && (
+            {selectedImage ? (
               <Image
                 source={{ uri: selectedImage }}
                 style={{
                   width: widthPercentageToDP(25),
                   height: widthPercentageToDP(25),
                   borderRadius: 50,
+                  paddingVertical: 8,
                 }}
               />
+            ) : (
+              <TouchableOpacity
+                onPress={pickImage}
+                className="p-4 bg-white rounded-full"
+              >
+                <Image
+                  source={{
+                    uri: "https://cdn-icons-png.flaticon.com/128/1042/1042339.png",
+                  }}
+                  className="h-20 w-20"
+                />
+              </TouchableOpacity>
             )}
           </View>
           <View style={styles.inputContainer}>
@@ -215,7 +254,7 @@ const Register = () => {
             </TouchableOpacity>
           </View>
           <TouchableOpacity
-            className="justify-center items-center p-1 flex-row gap-2 rounded-lg  "
+            className="justify-center items-center p-2 flex-row  rounded-lg  "
             style={{
               backgroundColor: colors.link,
               width: widthPercentageToDP(30),
@@ -223,7 +262,15 @@ const Register = () => {
             onPress={registerUser}
             disabled={img === null}
           >
-            <Text className="text-white text-xl font-bold">Sign - Up</Text>
+            <Text
+              className="text-white "
+              style={{
+                fontSize: heightPercentageToDP(2.2),
+                fontWeight: "bold",
+              }}
+            >
+              Sign - Up
+            </Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
