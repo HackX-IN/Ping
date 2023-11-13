@@ -8,6 +8,7 @@ import {
   View,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import {
   heightPercentageToDP,
@@ -33,6 +34,7 @@ const Register = () => {
   const [number, setNumber] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [img, setImg] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const navigation = useNavigation();
 
@@ -55,7 +57,7 @@ const Register = () => {
       quality: 1,
     });
 
-    if (!result.cancelled) {
+    if (!result.canceled) {
       const { uri } = result;
       handleImagePick(uri);
       uploadImage(uri);
@@ -63,6 +65,7 @@ const Register = () => {
   };
   const uploadImage = async (uri) => {
     try {
+      setLoading(true);
       const response = await fetch(uri);
       const blob = await response.blob();
 
@@ -74,6 +77,7 @@ const Register = () => {
 
       const downloadURL = await imageRef.getDownloadURL();
       setImg(downloadURL);
+      setLoading(false);
 
       console.log("Download URL:", downloadURL);
     } catch (error) {
@@ -92,8 +96,10 @@ const Register = () => {
   const handlePasswordChange = (text) => {
     setPassword(text);
   };
+
   const registerUser = async () => {
     try {
+      setLoading(true);
       if (
         name === "" ||
         email === "" ||
@@ -102,7 +108,24 @@ const Register = () => {
         img === null
       ) {
         SimpleToast.show("Fill in all the fields!");
+        setLoading(false);
         return false;
+      }
+
+      // Email validation
+      if (!email.includes("@")) {
+        SimpleToast.show("Invalid email format!");
+        setLoading(false);
+        return;
+      }
+
+      // Password validation
+      if (!/[A-Z]/.test(password)) {
+        SimpleToast.show(
+          "Password must contain at least one uppercase letter!"
+        );
+        setLoading(false);
+        return;
       }
 
       const fcmToken = await AsyncStorage.getItem("Tokens");
@@ -127,6 +150,7 @@ const Register = () => {
         .once("value", (snapshot) => {
           if (snapshot.exists()) {
             SimpleToast.show("User with the same email already exists!");
+            setLoading(false);
             return;
           } else {
             userRef
@@ -137,6 +161,7 @@ const Register = () => {
                   SimpleToast.show(
                     "User with the same phone number already exists!"
                   );
+                  setLoading(false);
                 } else {
                   // If no user with the same email and phone number, proceed with registration
                   firebase
@@ -160,6 +185,7 @@ const Register = () => {
                       setPassword("");
                       setImg(null);
                       setSelectedImage(null);
+                      setLoading(false);
                       navigation.navigate("Login");
                     });
                 }
@@ -168,6 +194,8 @@ const Register = () => {
         });
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -219,14 +247,14 @@ const Register = () => {
               placeholder="Name"
               placeholderTextColor={colors.lightwhite}
               value={name}
-              onChangeText={handleNameChange}
+              onChangeText={(text) => handleNameChange(text)}
             />
             <TextInput
               style={styles.input}
               placeholder="Email"
               placeholderTextColor={colors.lightwhite}
               value={email}
-              onChangeText={handleEmailChange}
+              onChangeText={(text) => handleEmailChange(text)}
             />
             <TextInput
               style={styles.input}
@@ -241,7 +269,7 @@ const Register = () => {
               placeholderTextColor={colors.lightwhite}
               secureTextEntry={true}
               value={password}
-              onChangeText={handlePasswordChange}
+              onChangeText={(text) => handlePasswordChange(text)}
             />
           </View>
 
@@ -253,25 +281,32 @@ const Register = () => {
               <Text style={styles.buttonText}>Sign In</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            className="justify-center items-center p-2 flex-row  rounded-lg  "
-            style={{
-              backgroundColor: colors.link,
-              width: widthPercentageToDP(30),
-            }}
-            onPress={registerUser}
-            disabled={img === null}
-          >
-            <Text
-              className="text-white "
+          {loading ? (
+            <ActivityIndicator
+              className="justify-center items-center p-2 flex-row  rounded-lg "
+              size={sizes.large}
+              color={colors.white}
+            />
+          ) : (
+            <TouchableOpacity
+              className="justify-center items-center p-2 flex-row  rounded-lg  "
               style={{
-                fontSize: heightPercentageToDP(2.2),
-                fontWeight: "bold",
+                backgroundColor: colors.link,
+                width: widthPercentageToDP(30),
               }}
+              onPress={registerUser}
             >
-              Sign - Up
-            </Text>
-          </TouchableOpacity>
+              <Text
+                className="text-white "
+                style={{
+                  fontSize: heightPercentageToDP(2.2),
+                  fontWeight: "bold",
+                }}
+              >
+                Sign - Up
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ImageBackground>
     </SafeAreaView>

@@ -1,167 +1,173 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
   View,
+  ScrollView,
   Text,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
+  FlatList,
+  Keyboard,
 } from "react-native";
-import {
-  GiftedChat,
-  Bubble,
-  Send,
-  InputToolbar,
-} from "react-native-gifted-chat";
 import { Audio } from "expo-av";
+
 import { LinearGradient } from "expo-linear-gradient";
-import { colors, sizes } from "../../constants";
-import { firebase } from "@react-native-firebase/database";
-import { databaseUrl } from "../../utils/Data";
-import { useUserContext } from "../../Hooks/UserApi";
-import ChatCustomheader from "../../components/ChatCustomHeader";
+import {
+  heightPercentageToDP,
+  widthPercentageToDP,
+} from "react-native-responsive-screen";
 import * as ImagePicker from "expo-image-picker";
-import uuid from "react-native-uuid";
+import MessageComponent from "../../components/MsgComponent";
+import ChatCustomHeader from "../../components/ChatCustomHeader";
 import storage from "@react-native-firebase/storage";
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { heightPercentageToDP } from "react-native-responsive-screen";
+import ChatFooter from "../../components/ChatFooter";
+import { colors, sizes } from "../../constants";
+
+import { firebase } from "@react-native-firebase/database";
+import { useUserContext } from "../../Hooks/UserApi";
+import SimpleToast from "react-native-simple-toast";
+import uuid from "react-native-uuid";
+import { databaseUrl } from "../../utils/Data";
+import { Feather } from "@expo/vector-icons";
+import Uploading from "../../components/Uploading";
+import Progressbar from "../../components/Progressbar";
 
 const ChatScreen = ({ route, navigation }) => {
+  const MESSAGE_ITEM_HEIGHT = 100;
+  const MESSAGE_ITEM_WIDTH = 200;
+
   const { receiverData } = route.params;
-  const { user, updateLastMessage } = useUserContext();
-  const [allChat, setAllChat] = useState([]);
+  // console.log(receiverData);
+  const [message, setMessage] = useState("");
   const [imageData, setImageData] = useState(null);
-  const [recording, setRecording] = useState(null);
-  const [audioURI, setAudioURI] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const scrollViewRef = useRef();
+  const [isPlaying, setIsPlaying] = useState(false);
   const audioPlayer = useRef(new Audio.Sound());
   const [audioDuration, setAudioDuration] = useState(0);
+  const [allChat, setallChat] = React.useState([]);
   const [playbackStatus, setPlaybackStatus] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const onChildAdd = useCallback(
-    (snapshot) => {
-      const newMessage = snapshot.val();
-      const messageExists = allChat.some(
-        (message) => message._id === snapshot.key
-      );
-
-      if (!messageExists) {
-        const formattedMessage = {
-          _id: snapshot.key,
-          text: newMessage.message,
-          createdAt: newMessage.createdAt,
-          user: {
-            _id: newMessage.from,
-            name: newMessage.fromName,
-          },
-          msgType: newMessage.msgType,
-          imageUri: newMessage.imageUri,
-          audioUri: newMessage.audioUri,
-          loading: false,
-        };
-        setAllChat((prevMessages) =>
-          GiftedChat.append(prevMessages, formattedMessage)
-        );
-      }
-    },
-    [allChat]
-  );
+  const { setUserData, user, updateLastMessage } = useUserContext();
+  const [progress, setProgress] = useState(0);
+  const [activeState, setActiveState] = useState(false);
 
   useEffect(() => {
-    const messagesRef = firebase
-      .app()
-      .database(databaseUrl)
-      .ref("/messages/" + receiverData.roomId);
-
-    messagesRef.on("child_added", onChildAdd);
-
-    return () => {
-      messagesRef.off("child_added", onChildAdd);
-    };
-  }, [onChildAdd, receiverData.roomId]);
-
-  const formattedTime = () => {
-    const currentTime = new Date();
-    const hours = currentTime.getHours();
-    const minutes = currentTime.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-  };
-
-  const onSend = async (newMessages = []) => {
-    const message = newMessages[0];
-    let formattedMessage;
-
-    formattedMessage = {
-      _id: uuid.v4(),
-      roomId: receiverData.roomId,
-      message: message.text,
-      from: user?.id,
-      to: receiverData.id,
-      sendTime: formattedTime(),
-      msgType: "text",
-      fcmtoken: receiverData.Token,
-      createdAt: message.createdAt,
-      user: {
-        _id: user.id,
-        name: user.name,
-      },
-    };
-    updateLastMessage(
-      formattedMessage.message,
-      formattedMessage.msgType,
-      formattedMessage.sendTime
-    );
-    setAllChat((previousMessages) =>
-      GiftedChat.append(previousMessages, formattedMessage)
-    );
-
-    await firebase
+    const onChildAdd = firebase
       .app()
       .database(databaseUrl)
       .ref("/messages/" + receiverData.roomId)
-      .push(formattedMessage);
+      .on("child_added", (snapshot) => {
+        // console.log('A new node has been added', snapshot.val());
+        setallChat((state) => [snapshot.val(), ...state]);
+      });
+    // Stop listening for updates when no longer required
+    return () =>
+      firebase
+        .app()
+        .database(databaseUrl)
+        .ref("/messages" + receiverData.roomId)
+        .off("child_added", onChildAdd);
+  }, [receiverData.roomId]);
 
-    setImageData(null);
+  const msgvalid = (txt) => txt && txt.replace(/\s/g, "").length;
+  const currentTime = new Date();
+
+  // Get the current time in hours, minutes, and seconds
+  const hours = currentTime.getHours();
+  const minutes = currentTime.getMinutes();
+  const seconds = currentTime.getSeconds();
+
+  // Create a formatted time string
+  const formattedTime = `${hours}:${minutes}`;
+
+  const sendPushNotification = async (recipientFCMToken, messageContent) => {
+    try {
+      const FCM_SERVER_KEY =
+        "AAAAGUl6xAU:APA91bFZAxc4f9LEHf_Aed3EIwDtWMNW0Ht8vw8jK31ameYch0Zp8N17S7nBlNJ5K2gtz1HkOWH_11RPUu2TllGubtog7wAf84Ckbpy6jI6wqjJrs4BM9ERFE4I5ItQSZJiC5i-oJhqs"; // Obtain your FCM server key from Firebase Console
+
+      const message = {
+        to: recipientFCMToken,
+        notification: {
+          title: user?.name,
+          body: messageContent,
+        },
+      };
+
+      const response = await fetch("https://fcm.googleapis.com/fcm/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `key=${FCM_SERVER_KEY}`,
+        },
+        body: JSON.stringify(message),
+      });
+
+      if (response.status === 200) {
+        console.log("Push notification with image sent successfully");
+      } else {
+        console.error("Failed to send push notification");
+      }
+    } catch (error) {
+      console.error("Error sending push notification:", error);
+    }
   };
 
-  const onSendImage = async (data) => {
-    if (data !== null || "") {
-      const imageId = uuid.v4();
-      const imageRef = storage().ref().child(`chatMedia/${imageId}`);
-      const response = await fetch(data);
-      const blob = await response.blob();
-      await imageRef.put(blob);
-      const downloadURL = await imageRef.getDownloadURL();
-      const message = {
-        _id: uuid.v4(),
-        roomId: receiverData.roomId,
-        from: user?.id,
-        to: receiverData.id,
-        sendTime: formattedTime(),
-        msgType: "image",
-        fcmtoken: receiverData.Token,
-        createdAt: new Date(),
-        user: {
-          _id: user.id,
-          name: user.name,
-        },
-        imageUri: downloadURL,
-        loading: true,
-      };
-      updateLastMessage(message.imageUri, message.msgType, message.sendTime);
+  const sendMsg = useCallback(() => {
+    if (message == "" || msgvalid(message) == 0) {
+      SimpleToast.show("Enter something....");
+      return false;
+    }
 
-      setAllChat((previousMessages) =>
-        GiftedChat.append(previousMessages, message)
-      );
+    let msgData = {
+      roomId: receiverData.roomId,
+      message: message,
+      from: user?.id,
+      to: receiverData.id,
+      sendTime: formattedTime,
+      msgType: "text",
+      fcmtoken: receiverData.token,
+    };
+    updateMessagesToFirebase(msgData);
+    Keyboard.dismiss();
+    setMessage("");
+  }, [message, receiverData.roomId, user]);
 
-      await firebase
+  const updateMessagesToFirebase = useCallback(
+    (msgData) => {
+      const newReference = firebase
         .app()
         .database(databaseUrl)
         .ref("/messages/" + receiverData.roomId)
-        .push(message);
+        .push();
+      msgData.id = newReference.key;
+      newReference.set(msgData).then(() => {
+        let chatListupdate = {
+          lastMsg: msgData.message,
+          sendTime: msgData.sendTime,
+          msgType: msgData.msgType,
+        };
 
-      setImageData(null);
-    }
-  };
+        const chatListRef = firebase
+          .app()
+          .database(databaseUrl)
+          .ref("/chatlist/" + receiverData?.id + "/" + user?.id);
+
+        console.log("Updating chat list for:", receiverData?.id, user?.id);
+
+        chatListRef
+          .update(chatListupdate)
+          .then(() => console.log("Data updated."))
+          .catch((error) => console.error("Error updating data:", error));
+
+        if (msgData.fcmtoken) {
+          sendPushNotification(msgData.fcmtoken, msgData.message);
+        }
+      });
+    },
+    [receiverData.roomId, user]
+  );
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -177,28 +183,93 @@ const ChatScreen = ({ route, navigation }) => {
       aspect: [4, 3],
     });
 
-    if (!result.cancelled) {
+    if (!result.canceled) {
       const { uri } = result;
-
-      onSendImage(uri);
       setImageData(uri);
+      onSendImage(uri);
     }
   };
+  const onSendImage = useCallback(
+    async (data) => {
+      if (data !== null || "") {
+        const imageId = uuid.v4();
+        const imageRef = storage().ref().child(`chatMedia/${imageId}`);
+        const response = await fetch(data);
+        const blob = await response.blob();
 
-  const renderInputToolbar = (props) => {
-    return (
-      <InputToolbar
-        {...props}
-        containerStyle={{
-          backgroundColor: "transparent",
-          borderTopWidth: 0,
-          paddingHorizontal: 16,
-        }}
-        primaryStyle={{ alignItems: "center" }}
-        textInputStyle={{ color: "#fff" }}
-      />
-    );
-  };
+        const uploadTask = imageRef.put(blob);
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setProgress(progress.toFixed());
+          },
+          (error) => {
+            console.error("Error uploading image: ", error);
+          },
+          async () => {
+            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+            let msgData = {
+              roomId: receiverData.roomId,
+              message: downloadURL,
+              from: user?.id,
+              to: receiverData.id,
+              sendTime: formattedTime,
+              msgType: "image",
+              fcmtoken: receiverData.token,
+            };
+            updateMessagesToFirebase(msgData);
+
+            if (msgData?.fcmtoken) {
+              await sendPushNotification(receiverData?.token, msgData?.msgType);
+            }
+
+            setImageData(null);
+          }
+        );
+      }
+    },
+    [allChat, receiverData, updateLastMessage, user]
+  );
+
+  useEffect(() => {
+    scrollViewRef.current.scrollToEnd({ animated: true });
+  }, [messages]);
+
+  async function playAudio(msg) {
+    try {
+      if (msg) {
+        if (isPlaying) {
+          await audioPlayer.current.pauseAsync();
+        } else {
+          await audioPlayer.current.loadAsync({
+            uri: msg,
+          });
+          await audioPlayer.current.playAsync();
+          setIsPlaying(true);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to play audio", error);
+    }
+  }
+  useEffect(() => {
+    if (audioPlayer.current) {
+      audioPlayer.current.setOnPlaybackStatusUpdate((status) => {
+        setPlaybackStatus(status);
+        if (status.isLoaded) {
+          setAudioDuration(status.durationMillis / 1000);
+          if (status.didJustFinish) {
+            setIsPlaying(false);
+          }
+        }
+      });
+    }
+  }, [audioPlayer]);
+
+  const [recording, setRecording] = useState(null);
+  const [audioURI, setAudioURI] = useState(null);
 
   async function startRecording() {
     try {
@@ -240,264 +311,118 @@ const ChatScreen = ({ route, navigation }) => {
       await audioRef.putFile(uri);
 
       const downloadURL = await audioRef.getDownloadURL();
-      const message = {
-        _id: uuid.v4(),
+
+      setAudioURI(downloadURL);
+      let msgData = {
         roomId: receiverData.roomId,
+        message: downloadURL,
         from: user?.id,
         to: receiverData.id,
-        sendTime: formattedTime(),
-        audioUri: downloadURL,
+        sendTime: formattedTime,
         msgType: "audio",
-        fcmtoken: receiverData.Token,
-        createdAt: new Date(),
-        user: {
-          _id: user.id,
-          name: user.name,
-        },
       };
-      updateLastMessage(message.audioUri, message.msgType, message.sendTime);
 
-      setAllChat((previousMessages) =>
-        GiftedChat.append(previousMessages, message)
-      );
-      console.log("Audio uploaded to Firebase Storage:", downloadURL);
-
-      await firebase
-        .app()
-        .database(databaseUrl)
-        .ref("/messages/" + receiverData.roomId)
-        .push(message);
+      updateMessagesToFirebase(msgData);
       console.log("Audio uploaded to Firebase Storage:", downloadURL);
     } catch (error) {
       console.error("Error uploading audio to Firebase Storage:", error);
     }
   }
-  async function playAudio(msg) {
-    try {
-      if (msg) {
-        if (isPlaying) {
-          await audioPlayer.current.pauseAsync();
-        } else {
-          await audioPlayer.current.loadAsync({
-            uri: msg,
-          });
-          await audioPlayer.current.playAsync();
-          setIsPlaying(true);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to play audio", error);
-    }
-  }
-  useEffect(() => {
-    if (audioPlayer.current) {
-      audioPlayer.current.setOnPlaybackStatusUpdate((status) => {
-        setPlaybackStatus(status);
-        if (status.isLoaded) {
-          setAudioDuration(status.durationMillis / 1000);
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-          }
-        }
-      });
-    }
-  }, [audioPlayer]);
-  const renderBubble = (props) => {
-    const { currentMessage } = props;
-    console.log(currentMessage);
-
-    if (currentMessage.msgType === "image" && currentMessage.imageUri) {
-      return (
-        <View>
-          {currentMessage.loading && (
-            <ActivityIndicator size="small" color="#ffffff" />
-          )}
-          <Image
-            source={{ uri: currentMessage.imageUri }}
-            style={{ width: 200, height: 200, marginBottom: 6 }}
-          />
-        </View>
-      );
-    }
-    if (currentMessage.msgType === "audio" && currentMessage.audioUri) {
-      return (
-        <View className="mb-2">
-          <TouchableOpacity
-            onPress={() => playAudio(currentMessage?.audioUri)}
-            style={{
-              backgroundColor: colors.primary,
-              padding: sizes.padding,
-              borderRadius: sizes.large,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 5,
-            }}
-          >
-            <Feather
-              name={isPlaying ? "pause-circle" : "play-circle"}
-              size={22}
-              color={colors.white}
-            />
-            {audioDuration > 0 && (
-              <Text
-                style={{
-                  color: colors.white,
-                  fontSize: heightPercentageToDP(1.4),
-                  textAlign: "left",
-                }}
-              >
-                {audioDuration.toFixed() + ".0"}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <Bubble
-        {...props}
-        wrapperStyle={{
-          right: {
-            backgroundColor: "#2C3E50",
-            marginBottom: 6,
-          },
-          left: {
-            backgroundColor: "#3498db",
-            marginBottom: 6,
-          },
-        }}
-      />
-    );
-  };
 
   return (
-    <View style={{ flex: 1 }}>
-      <LinearGradient colors={[colors.bg, colors.black]} style={{ flex: 1 }}>
-        <ChatCustomheader
+    <SafeAreaView style={styles.container}>
+      {imageData && <Uploading image={imageData} />}
+      <LinearGradient colors={[colors.bg, colors.black]} style={styles.flex1}>
+        <ChatCustomHeader
           text={receiverData?.name}
           icon1="chevron-left"
           icon2="phone-call"
           onpress={() => navigation.goBack()}
           item={receiverData}
-          pickImage={pickImage}
           navigation={navigation}
         />
 
-        <GiftedChat
-          alwaysShowSend
-          messages={allChat}
-          onSend={(newMessages) => onSend(newMessages)}
-          user={{
-            _id: user.id,
-            name: user.name,
-            avatar: user?.image,
-          }}
-          placeholder="Type your message..."
+        <FlatList
+          ref={scrollViewRef}
+          data={allChat}
+          keyExtractor={(msg) => String(msg.id)}
           inverted={true}
-          isTyping={true}
-          timeFormat="HH:mm"
-          renderTime={(props) => {
-            return (
-              <Text
-                {...props}
-                style={{
-                  color: colors.grey,
-                  fontSize: 8,
-                  alignSelf: "flex-end",
-                  marginRight: 8,
-                }}
-              />
-            );
-          }}
-          renderSend={(props) => {
-            return (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  height: 60,
-                }}
-              >
-                {imageData ? (
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 10,
-                      backgroundColor: "#fff",
-                      marginRight: 10,
-                    }}
-                  >
-                    <Image
-                      source={{ uri: imageData }}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        position: "absolute",
-                      }}
-                    />
+          contentContainerStyle={styles.messageContainer}
+          renderItem={({ item, index }) => (
+            <MessageComponent
+              item={item}
+              index={index}
+              onActiveState={() => {
+                setActiveState(true);
+              }}
+              activeState={activeState}
+              setActiveState={setActiveState}
+            />
+          )}
+        />
 
-                    <TouchableOpacity
-                      onPress={() => {
-                        setImageData(null);
-                      }}
-                    >
-                      <Image
-                        source={{
-                          uri: "https://cdn-icons-png.flaticon.com/128/1828/1828843.png",
-                        }}
-                        style={{ width: 16, height: 16, tintColor: "#fff" }}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
-                <TouchableOpacity
-                  onPress={recording ? stopRecording : startRecording}
-                  style={{ marginRight: 10 }}
-                >
-                  {recording ? (
-                    <Feather
-                      name="stop-circle"
-                      size={22}
-                      color={colors.white}
-                    />
-                  ) : (
-                    <Feather name="mic" size={22} color={colors.white} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ marginRight: 10 }}
-                  onPress={() => {
-                    pickImage();
-                  }}
-                >
-                  <Ionicons name="image" size={30} color="white" />
-                </TouchableOpacity>
-                <Send {...props} containerStyle={{ justifyContent: "center" }}>
-                  <Image
-                    source={{
-                      uri: "https://cdn-icons-png.flaticon.com/128/786/786205.png",
-                    }}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      marginRight: 10,
-                      tintColor: "orange",
-                    }}
-                  />
-                </Send>
-              </View>
-            );
-          }}
-          renderBubble={renderBubble}
-          renderInputToolbar={renderInputToolbar}
+        <ChatFooter
+          message={message}
+          setMessage={setMessage}
+          onSend={sendMsg}
+          pickImage={pickImage}
+          recording={recording}
+          setRecording={setRecording}
+          startRecording={startRecording}
+          stopRecording={stopRecording}
+          activeState={activeState}
+          setActiveState={setActiveState}
         />
       </LinearGradient>
-    </View>
+    </SafeAreaView>
   );
 };
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.gray,
+    position: "relative",
+  },
+  flex1: {
+    flex: 1,
+  },
+  emojiModal: {
+    position: "absolute",
+    bottom: heightPercentageToDP(11),
+  },
+  messageContainer: {
+    padding: sizes.medium,
+    paddingVertical: heightPercentageToDP(8),
+  },
+  messageBubble: {
+    padding: sizes.xxsmall,
+    borderRadius: sizes.xxsmall,
+    marginBottom: sizes.xxsmall,
+    maxWidth: widthPercentageToDP(70),
+    flexDirection: "row",
+  },
+  senderBubble: {
+    alignSelf: "flex-end",
+    backgroundColor: colors.blue,
+  },
+  receiverBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.lightwhite,
+  },
+  profilePic: {
+    width: widthPercentageToDP(50),
+    height: widthPercentageToDP(50),
+    resizeMode: "cover",
+  },
+  audioContainer: {
+    backgroundColor: colors.primary,
+    padding: sizes.padding,
+    borderRadius: sizes.large,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 5,
+  },
+});
 
 export default ChatScreen;

@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Entypo, Feather } from "@expo/vector-icons";
 import { sizes, colors } from "../constants/index.tsx";
 import { Audio } from "expo-av";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 
 import {
   heightPercentageToDP,
@@ -20,8 +21,8 @@ const ChatFooter = React.memo(
   ({
     message,
     setMessage,
-    showEmoji,
-    setShowEmoji,
+    activeState,
+    setActiveState,
     onSend,
     pickImage,
     recording,
@@ -35,34 +36,39 @@ const ChatFooter = React.memo(
           style={{
             position: "absolute",
             bottom: heightPercentageToDP(0),
-            width: widthPercentageToDP(95),
+            width: widthPercentageToDP(100),
             padding: sizes.medium,
             backgroundColor: colors.bginput,
             left: heightPercentageToDP(1),
-            borderRadius: sizes.thumbnail / 2,
             flexDirection: "row",
             alignItems: "center",
             gap: sizes.xxsmall,
             zIndex: 5,
+            paddingVertical: 12,
           }}
         >
-          <TouchableOpacity onPress={() => setShowEmoji(!showEmoji)}>
-            <Entypo name="emoji-happy" size={20} color={colors.lightwhite} />
-          </TouchableOpacity>
-
-          <TextInput
-            placeholder="Type Your message"
-            placeholderTextColor={colors.lightwhite}
+          <Animated.View
             style={{
-              width: widthPercentageToDP(60),
+              width:
+                message.length > 0
+                  ? widthPercentageToDP(80)
+                  : widthPercentageToDP(70),
               fontSize: heightPercentageToDP(1.9),
               fontWeight: "400",
-              color: colors.white,
+              color: colors.black,
+              backgroundColor: colors.white,
+              padding: sizes.xxsmall,
+              borderRadius: sizes.large,
             }}
-            multiline={true}
-            value={message}
-            onChangeText={setMessage}
-          />
+          >
+            <TextInput
+              placeholder="Type Your message"
+              placeholderTextColor={colors.lightwhite}
+              multiline={true}
+              value={message}
+              onChangeText={setMessage}
+            />
+          </Animated.View>
           {message.length === 0 && (
             <>
               <TouchableOpacity
@@ -97,12 +103,19 @@ const ChatFooter = React.memo(
             <TouchableOpacity
               onPress={() => onSend()}
               style={{
-                left: heightPercentageToDP(5),
                 alignItems: "center",
                 justifyContent: "center",
+                backgroundColor: colors.primary,
+                padding: sizes.xxsmall,
+                borderRadius: sizes.large,
               }}
             >
-              <Feather name="send" size={18} color={colors.white} />
+              <Feather
+                name="send"
+                size={sizes.subHeading}
+                color={colors.white}
+                style={{ top: 1, right: 1 }}
+              />
             </TouchableOpacity>
           )}
         </View>

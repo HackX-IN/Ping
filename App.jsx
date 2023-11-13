@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { UserProvider } from "./src/Hooks/UserApi";
 import messaging from "@react-native-firebase/messaging";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const App = () => {
   const requestUserPermission = async () => {
@@ -50,10 +51,12 @@ const App = () => {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <UserProvider>
-        <Navigation />
-      </UserProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <UserProvider>
+          <Navigation />
+        </UserProvider>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 };

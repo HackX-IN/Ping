@@ -8,17 +8,29 @@ import {
 } from "react-native-responsive-screen";
 import { useNavigation } from "@react-navigation/core";
 import { useUserContext } from "../Hooks/UserApi";
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 
 const ChatListItem = ({ item, index }) => {
+  // console.log("Dta odf User", item);
   const navigation = useNavigation();
   const { lastMessage, lastMessageType, lastSentTime } = useUserContext();
+  const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
   return (
     <TouchableOpacity
       key={item.id}
       onPress={() => navigation.navigate("Chat", { receiverData: item })}
     >
-      <View className="flex-row justify-between items-center p-3 mb-2  ">
+      <Animated.View
+        className="flex-row justify-between items-center p-3 mb-2 "
+        entering={FadeInUp.delay(index * 100)
+          .springify()
+          .easing(Easing.in)}
+      >
         <View className="flex-row items-center gap-3">
           <Image
             source={{
@@ -44,27 +56,38 @@ const ChatListItem = ({ item, index }) => {
               left: widthPercentageToDP(9),
             }}
           /> */}
-          <View className="flex-col  items-start flex justify-start ">
-            <Text className="text-white text-sm font-medium"> {item.name}</Text>
-            <Text
-              className="text-white  font-light"
-              style={{ fontSize: sizes.small }}
-            >
-              {lastMessageType === "image"
-                ? "Image"
-                : lastMessageType === "audio"
-                ? "audio"
-                : lastMessage}
-            </Text>
-          </View>
+          {lastMessage || lastMessageType ? (
+            <View className="flex-col  items-start flex justify-start ">
+              <Text className="text-white text-sm font-medium">
+                {" "}
+                {item.name}
+              </Text>
+              <Text
+                className="text-white  font-light"
+                style={{ fontSize: sizes.small }}
+              >
+                {lastMessageType === "image" || item?.msgtype === "image"
+                  ? "Image"
+                  : lastMessageType === "audio" || item?.msgtype === "audio"
+                  ? "audio"
+                  : lastMessage || item?.lastMsg}
+              </Text>
+            </View>
+          ) : (
+            <View className="items-start flex justify-start ">
+              <Text className="text-white text-sm font-medium">
+                {item.name}
+              </Text>
+            </View>
+          )}
         </View>
         <Text
           className="text-white  font-light "
           style={{ fontSize: sizes.small }}
         >
-          {lastSentTime}
+          {lastSentTime || item?.sendTime}
         </Text>
-      </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };

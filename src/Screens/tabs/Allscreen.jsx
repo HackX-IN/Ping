@@ -4,7 +4,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import Customheader from "../../components/Customheader";
 import { colors } from "../../constants";
 import * as Contacts from "expo-contacts";
-import { heightPercentageToDP } from "react-native-responsive-screen";
+import {
+  heightPercentageToDP,
+  widthPercentageToDP,
+} from "react-native-responsive-screen";
 import ContactList from "../../components/ContactList";
 import { Data } from "../../constants/Data";
 import { useUserContext } from "../../Hooks/UserApi";
@@ -13,6 +16,7 @@ import { firebase } from "@react-native-firebase/database";
 import { databaseUrl } from "../../utils/Data";
 import { useNavigation } from "@react-navigation/core";
 import uuid from "react-native-uuid";
+import LottieView from "lottie-react-native";
 
 const Allscreen = () => {
   const [contacts, setContacts] = useState([]);
@@ -80,19 +84,43 @@ const Allscreen = () => {
 
   useEffect(() => {
     const getMatchingUsers = () => {
-      const matchingUsers = allUser.map((user) => user.number);
-      const contactUsers = contacts.map((it) => it.phoneNumber);
+      if (!allUser || !contacts) {
+        return; // Make sure allUser and contacts are defined
+      }
+
+      const matchingUsers = allUser.map((user) => user.number || "");
+      const contactUsers = contacts.map((it) =>
+        (it.phoneNumber || "").replace(/[\s()\-]/g, "")
+      );
 
       const normalizedMatchingUsers = matchingUsers.map((number) =>
-        number.replace(/\s/g, "")
+        number.replace(/[\s()\-]/g, "")
       );
       const normalizedContactUsers = contactUsers.map((number) =>
-        number.replace(/\s/g, "")
+        number.replace(/[\s()\-]/g, "")
       );
 
-      const matchingNumbers = normalizedMatchingUsers.filter((userNumber) =>
-        normalizedContactUsers.includes(userNumber)
-      );
+      const matchingNumbers = normalizedMatchingUsers.filter((userNumber) => {
+        // Check if the contact number starts with a country code and ignore
+        const countryCodeCheck = ["+91", "+880"]; // Add more country codes as needed
+        const hasCountryCode = countryCodeCheck.some((code) =>
+          userNumber.startsWith(code)
+        );
+
+        // Ignore numbers with the specific country code
+        const contactWithoutCountryCode = normalizedContactUsers.map(
+          (contactNumber) => {
+            if (contactNumber.startsWith("+91")) {
+              return contactNumber.slice(3); // Remove the first three characters (+91)
+            }
+            return contactNumber;
+          }
+        );
+
+        return (
+          !hasCountryCode && contactWithoutCountryCode.includes(userNumber)
+        );
+      });
 
       setMatchingNumbers(matchingNumbers);
     };
@@ -125,6 +153,7 @@ const Allscreen = () => {
             number: user.number,
             lastMsg: "",
             msgTime: "",
+            token: user.token,
           };
           firebase
             .app()
@@ -137,6 +166,7 @@ const Allscreen = () => {
           data.lastMsg = "";
           data.roomId = roomId;
           data.msgTime = "";
+
           firebase
             .app()
             .database(databaseUrl)
@@ -159,7 +189,14 @@ const Allscreen = () => {
       }}
     >
       <LinearGradient colors={[colors.bg, colors.black]} style={{ flex: 1 }}>
-        <Customheader text={user?.name} image={user?.image} text2="Logout" />
+        <Customheader
+          text={user?.name}
+          image={user?.image}
+          text2="Logout"
+          ProfileonPress={() =>
+            navigation.navigate("Profile", { user: user, Name: "Profile" })
+          }
+        />
         {allUser.filter((item) => matchingNumbers.includes(item.number))
           .length > 0 && (
           <Text className="font-bold text-white text-lg mx-3 my-3 ">
@@ -174,15 +211,18 @@ const Allscreen = () => {
           data={allUser.filter((item) => matchingNumbers.includes(item.number))}
           keyExtractor={(item, index) => index.toString()}
           ListEmptyComponent={
-            <View
-              style={{ marginTop: heightPercentageToDP(8) }}
-              className=" justify-center text-center items-center   "
-            >
-              <Text className="text-white text-lg text-center font-bold ">
-                No Contacts Or Friends
+            <View style={styles.emptyListContainer}>
+              <LottieView
+                source={require("../../assets/images/empty.json")}
+                autoPlay
+                loop
+                style={styles.emptyImage}
+              />
+              <Text style={styles.emptyText}>
+                Oops! No Contacts or Friends Found 😔
               </Text>
-              <Text className="text-white text-lg text-center font-bold ">
-                Found 😔
+              <Text style={styles.emptySubText}>
+                Start connecting with others to build your network.
               </Text>
             </View>
           }
@@ -203,4 +243,29 @@ const Allscreen = () => {
 
 export default Allscreen;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: heightPercentageToDP(8),
+  },
+  emptyImage: {
+    width: widthPercentageToDP(40),
+    height: widthPercentageToDP(40),
+    resizeMode: "contain",
+    marginBottom: heightPercentageToDP(2),
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.white,
+    textAlign: "center",
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: colors.lightwhite,
+    textAlign: "center",
+    marginTop: 8,
+  },
+});

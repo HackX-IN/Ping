@@ -23,13 +23,14 @@ const Customheader = ({
   onpress,
   item,
   SearchToggle,
+  ProfileonPress,
 }) => {
   const { setUserData, user } = useUserContext();
   const navigation = useNavigation();
   const Logout = async () => {
     await AsyncStorage.removeItem("userData");
     setUserData(null);
-    navigation.navigate("Auth");
+    navigation.replace("Auth");
   };
   return (
     <View
@@ -49,17 +50,19 @@ const Customheader = ({
             gap: sizes.medium,
           }}
         >
-          <Image
-            source={{ uri: image }}
-            style={{
-              width: widthPercentageToDP(12),
-              height: widthPercentageToDP(12),
-              resizeMode: "cover",
-              borderRadius: widthPercentageToDP(6),
-            }}
-          />
+          <TouchableOpacity onPress={ProfileonPress} activeOpacity={0.5}>
+            <Image
+              source={{ uri: image }}
+              style={{
+                width: widthPercentageToDP(12),
+                height: widthPercentageToDP(12),
+                resizeMode: "cover",
+                borderRadius: widthPercentageToDP(6),
+              }}
+            />
+          </TouchableOpacity>
           <Text className="text-white text-base text-center font-medium">
-            {text}
+            {text.toUpperCase()}
           </Text>
         </View>
       ) : (

@@ -257,7 +257,7 @@
 				"${PODS_ROOT}/Target Support Files/Pods-ping/Pods-ping-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ZIM/ZIM.framework/ZIM",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ZPNs/ZPNs.framework/ZPNs",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ZegoExpressEngine/ZegoExpressEngine.framework/ZegoExpressEngine",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ZegoExpressEngine/Video/ZegoExpressEngine.framework/ZegoExpressEngine",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
 			name = "[CP] Embed Pods Frameworks";

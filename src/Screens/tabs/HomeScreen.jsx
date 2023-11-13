@@ -8,12 +8,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import LottieView from "lottie-react-native";
 import React, { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Customheader from "../../components/Customheader";
 import { colors, sizes } from "../../constants";
 import ChatListItem from "../../components/ChatListItem";
-import { heightPercentageToDP } from "react-native-responsive-screen";
+import {
+  heightPercentageToDP,
+  widthPercentageToDP,
+} from "react-native-responsive-screen";
 import { Data } from "../../constants/Data";
 import { firebase } from "@react-native-firebase/database";
 import { databaseUrl } from "../../utils/Data";
@@ -25,13 +29,34 @@ const HomeScreen = ({ navigation }) => {
   const [originalChatList, setOriginalChatList] = useState([]);
   const [chatList, setchatList] = useState([]);
 
-  const { setUserData, user } = useUserContext();
+  const { setUserData, user, lastMessage, lastMessageType, lastSentTime } =
+    useUserContext();
   const [isSearching, setIsSearching] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     getChatlist();
   }, [chatList]);
+  // console.log(chatList);
+
+  // useEffect(() => {
+  //   if (chatList.length > 0) {
+  //     chatList.forEach((chatListItem) => {
+  //       let chatListupdate = {
+  //         lastMsg: lastMessage,
+  //         sendTime: lastSentTime,
+  //         msgType: lastMessageType,
+  //       };
+
+  //       firebase
+  //         .app()
+  //         .database(databaseUrl)
+  //         .ref("/chatlist/" + RecieverId + "/" + user?.id)
+  //         .update(chatListupdate)
+  //         .then(() => console.log("Data updated."));
+  //     });
+  //   }
+  // }, [lastMessage, lastMessageType, lastSentTime, chatList, user]);
 
   const getChatlist = async () => {
     firebase
@@ -41,25 +66,33 @@ const HomeScreen = ({ navigation }) => {
       .on("value", (snapshot) => {
         if (snapshot.val() != null) {
           const chatListData = Object.values(snapshot.val());
-          setOriginalChatList(chatListData);
-          setchatList(chatListData);
+
+          // Sort the chat list based on the sendTime property in descending order
+          const sortedChatList = chatListData.sort((a, b) => {
+            const timeA = new Date(a.sendTime).getTime();
+            const timeB = new Date(b.sendTime).getTime();
+            return timeB - timeA;
+          });
+
+          setOriginalChatList(sortedChatList);
+          setchatList(sortedChatList);
         }
       });
   };
 
-  const handleSearch = () => {
-    const lowercaseSearchText = searchText.toLowerCase();
-    const filteredChatList = originalChatList.filter((item) => {
-      return item.name.toLowerCase().includes(lowercaseSearchText);
-    });
+  // const handleSearch = () => {
+  //   const filteredChatList = originalChatList.filter((item) => {
+  //     const lowercasedName = item.name.toLowerCase();
+  //     return lowercasedName.startsWith(searchText.toLowerCase());
+  //   });
 
-    setchatList(filteredChatList);
-    setSearchText("");
-    setIsSearching(false);
-  };
+  //   setchatList(filteredChatList);
+  //   setSearchText("");
+  //   setIsSearching(false);
+  // };
 
   const SearchToggle = () => {
-    setIsSearching(!isSearching);
+    // setIsSearching(!isSearching);
   };
   return (
     <SafeAreaView
@@ -73,7 +106,7 @@ const HomeScreen = ({ navigation }) => {
         <Customheader
           text="Messages"
           icon1="square-edit-outline"
-          icon2="search"
+          // icon2="search"
           color={colors.lightwhite}
           SearchToggle={SearchToggle}
         />
@@ -96,22 +129,21 @@ const HomeScreen = ({ navigation }) => {
             paddingHorizontal: heightPercentageToDP(0.5),
           }}
           data={chatList}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => String(item.id)}
           ListEmptyComponent={
-            <View
-              style={{ marginTop: heightPercentageToDP(8) }}
-              className=" justify-center text-center items-center   "
-            >
-              <Text className="text-white text-lg text-center font-bold ">
-                No Chats Yet 😔
-              </Text>
+            <View style={styles.emptyChatContainer}>
+              <LottieView
+                source={require("../../assets/images/chat.json")}
+                style={styles.emptyImage}
+                autoPlay
+                loop
+              />
+              <Text style={styles.emptyText}>No Chats Yet 😔</Text>
               <TouchableOpacity
-                className="mt-5 p-3 bg-sky-500 rounded-lg"
+                style={styles.addButton}
                 onPress={() => navigation.navigate("All")}
               >
-                <Text className="text-white text-lg text-center font-bold ">
-                  Click Here To Add Friends
-                </Text>
+                <Text style={styles.addButtonText}>Connect with Friends</Text>
               </TouchableOpacity>
             </View>
           }
@@ -126,4 +158,38 @@ const HomeScreen = ({ navigation }) => {
 
 export default HomeScreen;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  emptyChatContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: heightPercentageToDP(8),
+  },
+  emptyImage: {
+    width: widthPercentageToDP(40),
+    height: widthPercentageToDP(40),
+    resizeMode: "contain",
+    marginBottom: heightPercentageToDP(2),
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: colors.primary,
+    textAlign: "center",
+    marginBottom: heightPercentageToDP(2),
+  },
+  addButton: {
+    backgroundColor: colors.secondary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginTop: heightPercentageToDP(2),
+    elevation: 3, // For a subtle shadow on Android
+  },
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: colors.white,
+    textAlign: "center",
+  },
+});

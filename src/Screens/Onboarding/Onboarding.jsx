@@ -27,8 +27,9 @@ export default function OnboardingScreen() {
     let onboarded = await getItem("onboarded");
     if (onboarded == 1) {
       setShowOnboarding(false);
+
+      navigation.replace("Login");
       setLoading(false);
-      navigation.navigate("Login");
     } else {
       setLoading(false);
       setShowOnboarding(true);

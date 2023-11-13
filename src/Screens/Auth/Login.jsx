@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   heightPercentageToDP,
@@ -26,6 +27,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { setUserData } = useUserContext();
+  const [loading, setLoading] = useState(false);
 
   const handleEmailChange = (text) => {
     setEmail(text);
@@ -35,32 +37,42 @@ const Login = () => {
     setPassword(text);
   };
   const loginUser = async () => {
-    firebase
-      .app()
-      .database(databaseUrl)
-      .ref("users/")
-      .orderByChild("emailId")
-      .equalTo(email.toLowerCase())
-      .once("value")
-      .then(async (snapshot) => {
-        if (snapshot.val() == null) {
-          SimpleToast.show("Invalid Email Id!");
-          return false;
-        }
-        let userData = Object.values(snapshot.val())[0];
-        if (userData?.password != password) {
-          SimpleToast.show("Invalid Password!");
-          return false;
-        }
+    try {
+      setLoading(true);
 
-        console.log("User data: ", userData);
-        setUserData(userData);
-        console.log("login Success");
+      firebase
+        .app()
+        .database(databaseUrl)
+        .ref("users/")
+        .orderByChild("emailId")
+        .equalTo(email.toLowerCase())
+        .once("value")
+        .then(async (snapshot) => {
+          if (snapshot.val() == null) {
+            SimpleToast.show("Invalid Email Id!");
+            setLoading(false);
+            return false;
+          }
+          let userData = Object.values(snapshot.val())[0];
+          if (userData?.password != password) {
+            SimpleToast.show("Invalid Password!");
+            setLoading(false);
+            return false;
+          }
 
-        await AsyncStorage.setItem("userData", JSON.stringify(userData));
+          console.log("User data: ", userData);
+          setUserData(userData);
+          console.log("login Success");
 
-        SimpleToast.show("Login Successfully!");
-      });
+          await AsyncStorage.setItem("userData", JSON.stringify(userData));
+          setLoading(false);
+          SimpleToast.show("Login Successfully!");
+        });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,16 +122,33 @@ const Login = () => {
               <Text style={styles.buttonText}>Forgot Password</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            className="justify-center items-center p-2 flex-row  rounded-lg  "
-            style={{
-              backgroundColor: colors.link,
-              width: widthPercentageToDP(30),
-            }}
-            onPress={loginUser}
-          >
-            <Text className="text-white text-xl font-bold">Sign - In</Text>
-          </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator
+              className="justify-center items-center p-2 flex-row  rounded-lg "
+              size={sizes.large}
+              color={colors.white}
+            />
+          ) : (
+            <TouchableOpacity
+              className="justify-center items-center p-2 flex-row  rounded-lg  "
+              style={{
+                backgroundColor: colors.link,
+                width: widthPercentageToDP(30),
+              }}
+              onPress={loginUser}
+              disabled={loading}
+            >
+              <Text
+                className="text-white "
+                style={{
+                  fontSize: heightPercentageToDP(2.2),
+                  fontWeight: "bold",
+                }}
+              >
+                Sign - In
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ImageBackground>
     </SafeAreaView>

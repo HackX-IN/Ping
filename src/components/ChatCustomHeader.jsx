@@ -106,7 +106,12 @@ const ChatCustomHeader = React.memo(
               }
             />
           </TouchableOpacity>
-          <View className="items-center gap-2">
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("Profile", { user: item, Name: "Chat" })
+            }
+            className="items-center gap-2"
+          >
             <Image
               source={{ uri: item?.image }}
               style={{ width: wp(10), height: wp(10), borderRadius: wp(5) }}
@@ -121,7 +126,7 @@ const ChatCustomHeader = React.memo(
             >
               {text}
             </Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity onPress={toggleModal}>
             <Entypo name="dots-three-vertical" size={24} color="white" />
           </TouchableOpacity>
@@ -140,47 +145,31 @@ const ChatCustomHeader = React.memo(
               style={{
                 backgroundColor: "white",
                 borderRadius: 10,
-                padding: sizes.icon,
-                width: wp(40),
-                gap: 8,
+                padding: sizes.button,
+                rowGap: 6,
               }}
             >
-              <View className="flex-row gap-2 items-center mb-3">
-                <ZegoSendCallInvitationButton
-                  invitees={[
-                    {
-                      userID: item?.number.toString(),
-                      userName: item?.name.toString(),
-                    },
-                  ]}
-                  isVideoCall={false}
-                  resourceID={"ping_data"}
-                />
-                <Text
-                  className="text-base font-semibold"
-                  style={{ color: colors.link }}
-                >
-                  Voice Call
-                </Text>
-              </View>
-              <View className="flex-row gap-2 items-center">
-                <ZegoSendCallInvitationButton
-                  invitees={[
-                    {
-                      userID: item?.number.toString(),
-                      userName: item?.name.toString(),
-                    },
-                  ]}
-                  isVideoCall={true}
-                  resourceID={"ping_chat_app"}
-                />
-                <Text
-                  className="text-base font-semibold"
-                  style={{ color: colors.link }}
-                >
-                  Video Call
-                </Text>
-              </View>
+              <ZegoSendCallInvitationButton
+                invitees={[
+                  {
+                    userID: item?.number.toString(),
+                    userName: item?.name.toString(),
+                  },
+                ]}
+                isVideoCall={false}
+                resourceID={"ping_data"}
+              />
+
+              <ZegoSendCallInvitationButton
+                invitees={[
+                  {
+                    userID: item?.number.toString(),
+                    userName: item?.name.toString(),
+                  },
+                ]}
+                isVideoCall={true}
+                resourceID={"ping_chat_app"}
+              />
             </View>
           </View>
         </Modal>

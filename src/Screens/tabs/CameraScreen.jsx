@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View, Button } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as MediaLibrary from "expo-media-library"; // Import MediaLibrary
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "../../constants";
 import {
@@ -26,14 +27,30 @@ const CameraScreen = () => {
       aspect: [4, 3],
       quality: 1,
       base64: true,
+
+      preferredAssetRepresentationMode:
+        (ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Automatic =
+          "automatic"),
     });
 
-    if (!result.cancelled) {
+    if (!result.canceled) {
       setImage(result.uri);
-    }
-    if (result.canceled) {
+      saveImageToGallery(result.uri);
+    } else {
       setImage(null);
       navigation.navigate("Home");
+    }
+  };
+
+  const saveImageToGallery = async (imageUri) => {
+    try {
+      const asset = await MediaLibrary.createAssetAsync(imageUri);
+      await MediaLibrary.createAlbumAsync("Ping", asset, false);
+      console.log("Image saved to gallery");
+      setImage(null);
+      navigation.navigate("Home");
+    } catch (error) {
+      console.error("Error saving image to gallery", error);
     }
   };
 
@@ -43,17 +60,12 @@ const CameraScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={[colors.bg, colors.black]} style={{ flex: 1 }}>
-        {/* {image && (
-          <Image
-            source={{ uri: image }}
-            style={{
-              width: widthPercentageToDP("100%"),
-              height: heightPercentageToDP("100%"),
-            }}
-          />
-        )} */}
-      </LinearGradient>
+      <LinearGradient
+        colors={[colors.bg, colors.black]}
+        style={{ flex: 1 }}
+      ></LinearGradient>
+      {/* {image && <Image source={{ uri: image }} style={{ flex: 1 }} />} */}
+      {/* Optionally display the captured image */}
     </View>
   );
 };
