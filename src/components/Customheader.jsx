@@ -90,6 +90,7 @@ const Customheader = ({
               color: colors.link,
               fontWeight: "900",
             }}
+            className="tracking-wider font-extrabold text-blue-500 selection:text-white"
           >
             {text2}
           </Text>

@@ -24,13 +24,13 @@ import ChatCustomHeader from "../../components/ChatCustomHeader";
 import storage from "@react-native-firebase/storage";
 import ChatFooter from "../../components/ChatFooter";
 import { colors, sizes } from "../../constants";
-
+import { Entypo, Feather } from "@expo/vector-icons";
 import { firebase } from "@react-native-firebase/database";
 import { useUserContext } from "../../Hooks/UserApi";
 import SimpleToast from "react-native-simple-toast";
 import uuid from "react-native-uuid";
 import { databaseUrl } from "../../utils/Data";
-import { Feather } from "@expo/vector-icons";
+
 import Uploading from "../../components/Uploading";
 import Progressbar from "../../components/Progressbar";
 
@@ -105,7 +105,7 @@ const ChatScreen = ({ route, navigation }) => {
       });
 
       if (response.status === 200) {
-        console.log("Push notification with image sent successfully");
+        console.log("Push notification sent successfully");
       } else {
         console.error("Failed to send push notification");
       }
@@ -149,17 +149,15 @@ const ChatScreen = ({ route, navigation }) => {
           msgType: msgData.msgType,
         };
 
-        const chatListRef = firebase
-          .app()
-          .database(databaseUrl)
-          .ref("/chatlist/" + receiverData?.id + "/" + user?.id);
+        // const chatListRef = firebase
+        //   .app()
+        //   .database(databaseUrl)
+        //   .ref("/chatlist/" + receiverData?.id + "/" + user?.id);
 
-        console.log("Updating chat list for:", receiverData?.id, user?.id);
-
-        chatListRef
-          .update(chatListupdate)
-          .then(() => console.log("Data updated."))
-          .catch((error) => console.error("Error updating data:", error));
+        // chatListRef
+        //   .update(chatListupdate)
+        //   .then(() => console.log("Data updated."))
+        //   .catch((error) => console.error("Error updating data:", error));
 
         if (msgData.fcmtoken) {
           sendPushNotification(msgData.fcmtoken, msgData.message);
@@ -320,6 +318,7 @@ const ChatScreen = ({ route, navigation }) => {
         to: receiverData.id,
         sendTime: formattedTime,
         msgType: "audio",
+        fcmtoken: receiverData.token,
       };
 
       updateMessagesToFirebase(msgData);
@@ -357,6 +356,11 @@ const ChatScreen = ({ route, navigation }) => {
               }}
               activeState={activeState}
               setActiveState={setActiveState}
+              isPlaying={isPlaying}
+              setIsPlaying={setIsPlaying}
+              audioDuration={audioDuration}
+              playAudio={playAudio}
+              navigation={navigation}
             />
           )}
         />

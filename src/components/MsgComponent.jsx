@@ -28,6 +28,7 @@ import {
   heightPercentageToDP,
   widthPercentageToDP,
 } from "react-native-responsive-screen";
+import { Feather } from "@expo/vector-icons";
 
 const MessageComponent = ({
   item: msg,
@@ -35,6 +36,10 @@ const MessageComponent = ({
   onActiveState,
   activeState,
   setActiveState,
+  isPlaying,
+  playAudio,
+  audioDuration,
+  navigation,
 }) => {
   const { setUserData, user, updateLastMessage } = useUserContext();
   const messageDirection =
@@ -111,7 +116,7 @@ const MessageComponent = ({
                 style={{
                   color: colors.white,
                   fontSize: heightPercentageToDP(1.4),
-                  textAlign: "right",
+                  textAlign: msg.from === user.id ? "right" : "left",
                 }}
               >
                 {msg.sendTime}
@@ -119,19 +124,26 @@ const MessageComponent = ({
             </View>
           )}
           {msg.msgType === "image" && (
-            <View>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("FullScreenImage", { image: msg.message })
+              }
+            >
               <Image source={{ uri: msg.message }} style={styles.profilePic} />
               <Text
                 style={{
                   color: colors.white,
                   fontSize: heightPercentageToDP(1.4),
-                  textAlign: "right",
-                  paddingTop: 5,
+                  textAlign: msg.from === user.id ? "right" : "left",
+                  position: "absolute",
+                  bottom: widthPercentageToDP(2),
+                  left: 2,
+                  fontWeight: "800",
                 }}
               >
                 {msg.sendTime}
               </Text>
-            </View>
+            </TouchableOpacity>
           )}
           {msg.msgType === "audio" && (
             <View>
@@ -170,7 +182,7 @@ const MessageComponent = ({
                 style={{
                   color: colors.white,
                   fontSize: heightPercentageToDP(1.4),
-                  textAlign: "right",
+                  textAlign: msg.from === user.id ? "right" : "left",
                   paddingTop: 5,
                 }}
               >
@@ -190,7 +202,7 @@ const styles = StyleSheet.create({
     paddingVertical: heightPercentageToDP(8),
   },
   messageBubble: {
-    padding: sizes.xxsmall,
+    padding: sizes.padding,
     borderRadius: sizes.xxsmall,
     marginBottom: sizes.xxsmall,
     maxWidth: widthPercentageToDP(70),
@@ -202,11 +214,11 @@ const styles = StyleSheet.create({
   },
   receiverBubble: {
     alignSelf: "flex-start",
-    backgroundColor: colors.lightwhite,
+    backgroundColor: colors.purple,
   },
   profilePic: {
-    width: widthPercentageToDP(50),
-    height: widthPercentageToDP(50),
+    width: widthPercentageToDP(60),
+    height: widthPercentageToDP(75),
     resizeMode: "cover",
   },
   audioContainer: {

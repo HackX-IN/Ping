@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Pressable,
@@ -22,6 +23,9 @@ import { databaseUrl } from "../../utils/Data";
 import SimpleToast from "react-native-simple-toast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import uuid from "react-native-uuid";
+import storage from "@react-native-firebase/storage";
+import * as ImagePicker from "expo-image-picker";
 
 const ProfileScreen = ({ route, navigation }) => {
   const { user, Name } = route.params;
@@ -30,8 +34,10 @@ const ProfileScreen = ({ route, navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [update, setUpdate] = useState(false);
-  const [loading, setLoading] = useState(false);
+
   const [showPassword, SetShowPassword] = useState(false);
+  const [img, setImg] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleUpdate = async () => {
     try {
@@ -43,6 +49,13 @@ const ProfileScreen = ({ route, navigation }) => {
         setLoading(false);
         return false;
       }
+      if (!/[A-Z]/.test(password)) {
+        SimpleToast.show(
+          "Password must contain at least one uppercase letter!"
+        );
+        setLoading(false);
+        return;
+      }
 
       const updatedUser = {
         id: user?.id,
@@ -50,7 +63,7 @@ const ProfileScreen = ({ route, navigation }) => {
         emailId: email.length > 0 ? email.toLowerCase() : user?.emailId,
         password: password.length > 0 ? password : user?.password,
         number: user?.number,
-        image: user?.image,
+        image: img !== null ? img : user?.image,
         token: user?.token,
       };
 
@@ -93,6 +106,49 @@ const ProfileScreen = ({ route, navigation }) => {
     setUpdate(!update);
   };
 
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== "granted") {
+      alert("Permission to access media library is required");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const { uri } = result;
+
+      uploadImage(uri);
+    }
+  };
+  const uploadImage = async (uri) => {
+    try {
+      setLoading(true);
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const imageId = uuid.v4();
+
+      const imageRef = storage().ref().child(`usersprofilepic/${imageId}`);
+
+      await imageRef.put(blob);
+
+      const downloadURL = await imageRef.getDownloadURL();
+      setImg(downloadURL);
+      setLoading(false);
+
+      console.log("Download URL:", downloadURL);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const fetchAllReceivers = () => {
     return new Promise((resolve, reject) => {
       firebase
@@ -130,7 +186,7 @@ const ProfileScreen = ({ route, navigation }) => {
         >
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            className="p-2 top-8"
+            className="p-2 top-8 absolute"
           >
             <Ionicons
               name="arrow-back"
@@ -140,25 +196,45 @@ const ProfileScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </LinearGradient>
         <View className="justify-center items-center p-1 bottom-14">
-          <View
-            style={{
-              borderWidth: 3,
-              borderColor: colors.white,
-              borderRadius: 80,
-            }}
-          >
-            <Image
-              source={{ uri: user.image }}
+          {update ? (
+            <TouchableOpacity onPress={pickImage}>
+              <Image
+                source={{
+                  uri: img
+                    ? img
+                    : "https://cdn-icons-png.flaticon.com/128/10152/10152423.png",
+                }}
+                style={{
+                  height: widthPercentageToDP(26),
+                  width: widthPercentageToDP(26),
+                  borderRadius: widthPercentageToDP(13),
+                }}
+              />
+            </TouchableOpacity>
+          ) : (
+            <View
               style={{
-                height: widthPercentageToDP(26),
-                width: widthPercentageToDP(26),
-                borderRadius: widthPercentageToDP(13),
+                borderWidth: 3,
+                borderColor: colors.white,
+                borderRadius: sizes.borderRadius,
               }}
-            />
-          </View>
-          <Text className="text-white font-bold text-lg pt-1  ">
-            {user?.name}
-          </Text>
+            >
+              <Image
+                source={{ uri: user.image }}
+                style={{
+                  height: widthPercentageToDP(26),
+                  width: widthPercentageToDP(26),
+                  borderRadius: widthPercentageToDP(13),
+                }}
+              />
+            </View>
+          )}
+
+          {!update && (
+            <Text className="text-white font-bold text-lg pt-1  ">
+              {user?.name}
+            </Text>
+          )}
           {Name === "Profile" && (
             <>
               {!update && (
@@ -214,7 +290,7 @@ const ProfileScreen = ({ route, navigation }) => {
                   className="flex-row justify-between items-center pt-1 pb-2  border-gray-500"
                 >
                   <Text className="text-white text-base font-bold  ">
-                    {showPassword ? user?.password : "XXXXXX"}
+                    {showPassword ? user?.password : "********"}
                   </Text>
                   <TouchableOpacity
                     onPress={() => SetShowPassword(!showPassword)}
@@ -283,9 +359,16 @@ const ProfileScreen = ({ route, navigation }) => {
                   onPress={handleUpdate}
                   className="justify-center mt-6 items-center bg-sky-500 rounded-lg p-2"
                 >
-                  <Text className="text-base font-bold text-black">
-                    Update Profile
-                  </Text>
+                  {loading ? (
+                    <ActivityIndicator
+                      size={sizes.extraLarge}
+                      color={colors.white}
+                    />
+                  ) : (
+                    <Text className="text-base font-bold text-black">
+                      Update Profile
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>

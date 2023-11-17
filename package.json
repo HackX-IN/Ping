@@ -28,7 +28,9 @@
     "expo-contacts": "~12.2.0",
     "expo-image-picker": "~14.3.2",
     "expo-linear-gradient": "~12.3.0",
+    "expo-media-library": "~15.4.1",
     "expo-status-bar": "~1.6.0",
+    "lodash": "^4.17.21",
     "lottie-react-native": "5.1.6",
     "nativewind": "^2.0.11",
     "react": "18.2.0",
@@ -48,7 +50,7 @@
     "zego-express-engine-reactnative": "^3.2.0",
     "zego-zim-react-native": "^2.10.0",
     "zego-zpns-react-native": "^2.5.0-alpha",
-    "expo-media-library": "~15.4.1"
+    "expo-file-system": "~15.4.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -4,6 +4,7 @@ export const colors = {
   primary: "#3498db",
   secondary: "#2ecc71",
   background: "#ecf0f1",
+
   text: "#333",
   accent: "#e74c3c",
   link: "#2980b9",
@@ -47,5 +48,6 @@ export const sizes = {
   input: 16,
   cardTitle: 20,
   ImageSize: 50,
+  borderRadius: 80,
   // Add more sizes as needed
 };

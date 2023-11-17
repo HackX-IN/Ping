@@ -5,6 +5,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { colors, sizes } from "../constants/index";
 import Uploading from "../components/Uploading";
+import FullScreenImage from "../components/FullscreenImage";
 import {
   ZegoCallInvitationDialog,
   ZegoUIKitPrebuiltCallWaitingScreen,
@@ -16,7 +17,7 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { Feather } from "@expo/vector-icons";
-import { Login, Onboarding, Register } from "../Screens/Auth";
+import { ForgetPassword, Login, Onboarding, Register } from "../Screens/Auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserContext } from "../Hooks/UserApi";
 import { useEffect, useState } from "react";
@@ -66,6 +67,11 @@ export default function Navigation() {
             <Stack.Screen name="Main" component={MyTabs} />
             <Stack.Screen name="Chat" component={Chat} />
             <Stack.Screen name="Profile" component={Profile} />
+            <Stack.Screen
+              name="FullScreenImage"
+              component={FullScreenImage}
+              options={{ presentation: "fullScreenModal", animation: "fade" }}
+            />
             <Stack.Screen
               options={{ headerShown: false }}
               // DO NOT change the name
@@ -173,6 +179,7 @@ function AuthStack() {
       <Stack.Screen name="Onboarding" component={Onboarding} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="FPassword" component={ForgetPassword} />
     </Stack.Navigator>
   );
 }

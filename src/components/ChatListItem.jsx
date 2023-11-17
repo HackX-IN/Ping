@@ -56,7 +56,7 @@ const ChatListItem = ({ item, index }) => {
               left: widthPercentageToDP(9),
             }}
           /> */}
-          {lastMessage || lastMessageType ? (
+          {item?.lastMsg || item?.msgtype ? (
             <View className="flex-col  items-start flex justify-start ">
               <Text className="text-white text-sm font-medium">
                 {" "}
@@ -85,7 +85,7 @@ const ChatListItem = ({ item, index }) => {
           className="text-white  font-light "
           style={{ fontSize: sizes.small }}
         >
-          {lastSentTime || item?.sendTime}
+          {item?.sendTime}
         </Text>
       </Animated.View>
     </TouchableOpacity>

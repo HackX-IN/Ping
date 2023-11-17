@@ -62,9 +62,12 @@ const Login = () => {
 
           console.log("User data: ", userData);
           setUserData(userData);
-          console.log("login Success");
 
           await AsyncStorage.setItem("userData", JSON.stringify(userData));
+          await AsyncStorage.setItem(
+            "ForgetPassword",
+            JSON.stringify(userData)
+          );
           setLoading(false);
           SimpleToast.show("Login Successfully!");
         });
@@ -118,7 +121,10 @@ const Login = () => {
             >
               <Text style={styles.buttonText}>Sign Up</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate("FPassword")}
+            >
               <Text style={styles.buttonText}>Forgot Password</Text>
             </TouchableOpacity>
           </View>
